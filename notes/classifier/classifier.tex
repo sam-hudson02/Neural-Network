@@ -1,0 +1,260 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amsthm,amsfonts,amssymb,amscd}
+\usepackage{multirow,booktabs}
+\usepackage[table]{xcolor}
+\usepackage{fullpage}
+\usepackage{lastpage}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{mathrsfs}
+\usepackage{wrapfig}
+\usepackage{setspace}
+\usepackage{neuralnetwork}
+\usepackage{calc}
+\usepackage{multicol}
+\usepackage{cancel}
+\usepackage[retainorgcmds]{IEEEtrantools}
+\usepackage[margin=3cm]{geometry}
+\usepackage{amsmath}
+\newlength{\tabcont}
+\setlength{\parindent}{0.0in}
+\setlength{\parskip}{0.05in}
+\usepackage{empheq}
+\usepackage{framed}
+\usepackage[most]{tcolorbox}
+\usepackage{xcolor}
+\colorlet{shadecolor}{orange!15}
+\parindent 0in
+\parskip 12pt
+\geometry{margin=1in, headsep=0.25in}
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}
+\newtheorem{reg}{Rule}
+\newtheorem{exer}{Exercise}
+\newtheorem{note}{Note}
+\begin{document}
+\title{Classifier Notes}
+
+\thispagestyle{empty}
+
+\begin{center}
+{\LARGE \bf Classifier Notes}\\
+\end{center}
+
+\section{Input Data}
+\begin{wrapfigure}{r}{0.5\textwidth}
+    \centering
+    \includegraphics[width=0.3\textwidth]{figures/mnist.png}
+    \caption{Examples of MNIST dataset}
+\end{wrapfigure}
+The classifier model is currently designed to work with the MNIST dataset which is 
+a dataset of 41,000 images of handwritten digits. Our goal with this model is to 
+train a classifier network with these images and use that network to predict new
+unseen images and classify them into one of the 10 classes (0-9). Each image is 28x28 
+pixels and each pixel has a value between 0 and 255 (0 representing white and 255 
+representing black). We use the first 40,000 images for training and the last 1,000 
+images for testing to ensure that the model is generalizing well to unseen data.
+Our initial dataset is a csv file with 41,000 rows and 785 columns, where each
+row represents an image. The first column is the label of the image (0-9) and the
+remaining 784 columns are the pixel values of the image (28x28=784) as seen in table \ref{tab:pixel_table}.
+% make a table of the first 5 rows of the dataset
+\begin{table}[ht]
+    \centering
+    \renewcommand{\arraystretch}{1.2}
+    \setlength{\tabcolsep}{4pt}
+    \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|}
+        \hline
+        \textbf{Label} & \textbf{Pixel 1} & \textbf{Pixel 2} & \textbf{Pixel 3} & \textbf{Pixel 4} & \textbf{Pixel 5} & \textbf{Pixel 6} & \dots & \textbf{Pixel 783} & \textbf{Pixel 784} \\
+        \hline
+        0 & 0 & 1 & 2 & 3 & 4 & 5 & \dots & 0 & 1 \\
+        1 & 9 & 8 & 7 & 6 & 5 & 4 & \dots & 2 & 3 \\
+        2 & 3 & 4 & 5 & 6 & 7 & 8 & \dots & 4 & 5 \\
+        \hline
+    \end{tabular}
+    \caption{Example table showing the input data csv file}
+    \label{tab:pixel_table}
+\end{table}
+To get the data into a useable format for the model, we need to vectorize both the 
+pixel values and the labels. We'll first import the data into python using a pandas 
+dataframe and then convert the dataframe into a numpy array and shuffle it randomly. 
+Our first task is to split the data into training and testing sets. We'll then split
+the data into features (pixel values) and labels (0-9) after transposing our array (
+so pixel values are now column vectors). We'll also normalize the pixel values by
+dividing each feature vector by 255.0 to ensure that the pixel values are between 0
+and 1. We'll then one-hot encode the labels so that they are in the form of a 10x1.
+We end up with 4 arrays: X\_train, y\_train, X\_test, y\_test. 
+\begin{equation}
+    X_{tr} = \begin{bmatrix}
+        x_{1,1} & x_{1,2} & \dots & x_{1, 40,000} \\
+        x_{2,1} & x_{2,2} & \dots & x_{2, 40,000} \\
+        \vdots & \vdots & \ddots & \vdots \\
+        x_{784, 1} & x_{784, 2} & \dots & x_{784, 40,000}
+    \end{bmatrix}
+    Y_{tr} = \begin{bmatrix}
+        y_{1,1} & y_{1,2} & \dots & y_{1, 40,000} \\
+        y_{2,1} & y_{2,2} & \dots & y_{2, 40,000} \\
+        \vdots & \vdots & \ddots & \vdots \\
+        y_{10,1} & y_{10,2} & \dots & y_{10, 40,000}
+    \end{bmatrix}
+\end{equation}
+\begin{equation}
+    X_{te} = \begin{bmatrix}
+        x_{1,1} & x_{1,2} & \dots & x_{1, 1,000} \\
+        x_{2,1} & x_{2,2} & \dots & x_{2, 1,000} \\
+        \vdots & \vdots & \ddots & \vdots \\
+        x_{784, 1} & x_{784, 2} & \dots & x_{784, 1,000}
+    \end{bmatrix}
+    Y_{te} = \begin{bmatrix}
+        y_{1,1} & y_{1,2} & \dots & y_{1, 1,000} \\
+        y_{2,1} & y_{2,2} & \dots & y_{2, 1,000} \\
+        \vdots & \vdots & \ddots & \vdots \\
+        y_{10,1} & y_{10,2} & \dots & y_{10, 1,000}
+    \end{bmatrix}
+\end{equation}
+Where the $X$ matrices are made of column vectors of pixel values ($x_{i,j}$ is the
+$i$th pixel value of the $j$th image) and the $Y$ matrices are made of column vectors
+of the corresponding one-hot encoded labels ($y_{i,j}$ is the $i$th label of the $j$th
+image). this code can be found in the '/src/utils/data.py' file as the function 
+'load\_mnist\_data()'.
+
+\section{Model}
+
+\subsection{Propagation}
+The model is a simple 2-layer network: an input layer that takes in the 784 pixel $\times $ N images and a hidden layer with a ReLU activation function. Our propagation function
+is defined as:\\
+\begin{equation}
+    Z^{[1]} = W^{[1]}X + b^{[1]}
+\end{equation}
+\begin{equation}
+    A^{[1]} = \text{ReLU}(Z^{[1]})
+\end{equation}
+\begin{equation}
+    Z^{[2]} = W^{[2]}A^{[1]} + b^{[2]}
+\end{equation}
+\begin{equation}
+    A^{[2]} = \text{Softmax}(Z^{[2]})
+\end{equation}
+\begin{center}
+    \emph{(this can be found in the '/src/models/classifier.py' file as the 
+        'propagate()' method).}
+\end{center}
+Where the weight and bias matrices are defined as:
+\begin{equation}
+    W^{[1]} = \begin{bmatrix}
+        w_{1,1} & w_{1,2} & \dots & w_{1, 784} \\
+        w_{2,1} & w_{2,2} & \dots & w_{2, 784} \\
+        \vdots & \vdots & \ddots & \vdots \\
+        w_{10, 1} & w_{10, 2} & \dots & w_{10, 784}
+    \end{bmatrix}
+    b^{[1]} = \begin{bmatrix}
+        b_{1} \\
+        b_{2} \\
+        \vdots \\
+        b_{10}
+    \end{bmatrix}
+\end{equation}
+\begin{equation}
+    W^{[2]} = \begin{bmatrix}
+        w_{1,1} & w_{1,2} & \dots & w_{1, 10} \\
+        w_{2,1} & w_{2,2} & \dots & w_{2, 10} \\
+        \vdots & \vdots & \ddots & \vdots \\
+        w_{10, 1} & w_{10, 2} & \dots & w_{10, 10}
+    \end{bmatrix}
+    b^{[2]} = \begin{bmatrix}
+        b_{1} \\
+        b_{2} \\
+        \vdots \\
+        b_{10}
+    \end{bmatrix}
+\end{equation}
+All the weights and biases are initialized randomly with values between -0.5 and 0.5
+and stored as class attributes.
+(\emph{this can be found in the '/src/models/classifier.py' file as the 'init\_weights()'
+method}). 
+\begin{center}
+    The sizes of the network layers are as follows:\\
+    $X: 784 \times N$, $Z^{[1]}: 10 \times N$, $A^{[1]}: 10 \times N$, $Z^{[2]}: 10 \times N$, $A^{[2]}: 10 \times N$\\[1em]
+    The ReLU activation function is defined as:
+    \begin{equation}
+        \text{ReLU}(x) = \max(0, x)
+    \end{equation}
+    The softmax function is defined as:
+    \begin{equation}
+        \text{Softmax}(x) = \frac{e^{x}}{\sum_{i=1}e^{x_i}}
+    \end{equation}
+    \emph{(implementation of the ReLU and Softmax functions can be found in the 
+        '/src/utils/utils.py' file).}
+\end{center}
+
+\subsection{Back-propagation}
+The back propagation of the system was implemented using a gradient descent method.
+The loss function used was the cross-entropy loss function:
+\begin{equation}
+    L = -\frac{1}{N}\sum_{i=1}^{N}\sum_{j=1}^{10}y_{j,i}\log(a_{j,i})
+\end{equation}
+\begin{equation}
+    L = -\frac{1}{N}\sum_{i=1}^{N}\sum_{j=1}^{10}y_{j,i}\log(\text{Softmax}(z^{[2]}_{j,i}))
+\end{equation}
+Looking at just the the loss function for a single image, we can see that the 
+derivative with respect to the output layer is:
+\begin{align*}
+    L_{i} &= -\sum_{j=1}^{10}y_{j}\log(a_{j}) \\
+    \frac{\partial L_{i}}{\partial z^{[2]}_{i}} &= - \sum_{k=1}^{10}y_{k}\frac{\partial
+        \log(a_{k})}{\partial z^{[2]}_{i}} \\
+    &= - \sum_{k=1}^{10}y_{k}\frac{1}{a_{k}}\frac{\partial a_{k}}{\partial z^{[2]}_{i}} \\
+\end{align*}
+The derivative of the softmax function is:
+\begin{equation}
+    \frac{\partial a_{k}}{\partial z^{[2]}_{i}} = \begin{cases}
+        a_{k}(1-a_{k}) & \text{if } k = i \\
+        -a_{k}a_{i} & \text{if } k \neq i
+    \end{cases}
+\end{equation}
+Hence:
+\begin{align*}
+    \frac{\partial L_{i}}{\partial z^{[2]}_{i}} &= -y_{j}(1-a_{j}) - \sum_{k \neq j}y_{k}a_{j}\\
+                                                &= a_{j} \left( y_{j} + \sum_{k \neq j}y_{k} \right) - y_{j} \\
+\end{align*}
+Since $\sum_{k}y_{k} = 1$ and $y_{j} + \sum_{k \neq i}y_{k} = 1$, we have:
+\begin{equation}
+    \frac{\partial L_{i}}{\partial z^{[2]}_{i}} = a_{j} - y_{j}
+\end{equation}
+Hence:
+\begin{equation}
+    \frac{\partial L}{\partial Z^{[2]}} = A^{[2]} - Y
+\end{equation}
+The derivative of the loss function with respect to the weights and biases of the
+output layer is:
+\begin{equation}
+    \frac{\partial L}{\partial W^{[2]}} = \frac{\partial L}{\partial Z^{[2]}}\frac{\partial Z^{[2]}}{\partial W^{[2]}} = \frac{1}{N}\frac{\partial L}{\partial Z^{[2]}}A^{[1]T}
+\end{equation}
+\begin{equation}
+    \frac{\partial L}{\partial B^{[2]}} = \frac{1}{N}\sum_{i=1}^{N}\frac{\partial L}{\partial Z^{[2]}}
+\end{equation}
+\begin{equation}
+    \frac{\partial L}{\partial Z^{[1]}} = W^{[2]T}\frac{\partial L}{\partial Z^{[2]}} \cdot \text{ReLU}'(Z^{[1]})
+\end{equation}
+\begin{equation}
+    \frac{\partial L}{\partial W^{[1]}} = \frac{1}{N}\frac{\partial L}{\partial Z^{[1]}}X^{T}
+\end{equation}
+\begin{equation}
+    \frac{\partial L}{\partial B^{[1]}} = \frac{1}{N}\sum_{i=1}^{N}\frac{\partial L}{\partial Z^{[1]}}
+\end{equation}
+The weights and biases are then updated using the following formulas:
+\begin{equation}
+    W^{[1]} = W^{[1]} - \alpha \frac{\partial L}{\partial W^{[1]}}
+\end{equation}
+\begin{equation}
+    B^{[1]} = B^{[1]} - \alpha \frac{\partial L}{\partial B^{[1]}}
+\end{equation}
+\begin{equation}
+    W^{[2]} = W^{[2]} - \alpha \frac{\partial L}{\partial W^{[2]}}
+\end{equation}
+\begin{equation}
+    B^{[2]} = B^{[2]} - \alpha \frac{\partial L}{\partial B^{[2]}}
+\end{equation}
+Where $\alpha$ is the learning rate. The back propagation function is implemented in
+the '/src/models/classifier.py' file as the 'back\_prop()' method. Dynamic batch size
+has also been implemented meaning the training data can be split into smaller batches
+and the weights and biases are updated after each batch. 
+\end{document}
