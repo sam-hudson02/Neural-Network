@@ -5,7 +5,7 @@ from typing import Tuple
 
 
 class Classifier:
-    def __init__(self, x: np.ndarray, y: np.ndarray, alpha: float = 0.10,
+    def __init__(self, x: np.ndarray, y: np.ndarray,
                  activation: Activation = Activation.RELU):
         """
         Basic classifier neural network to train and predict MNIST data.
@@ -18,7 +18,6 @@ class Classifier:
         """
         self.x: np.ndarray = x
         self.y: np.ndarray = y
-        self.alpha: float = alpha
         self.n: int = x.shape[1]
         self.activation: Activation = activation
         self.classes: int = y.shape[0]
@@ -53,7 +52,8 @@ class Classifier:
         print(f'b_2: {b_2})')
         return w_1, w_2, b_1, b_2
 
-    def back_prop(self, x, y) -> np.ndarray:
+    def back_prop(self, x: np.ndarray, y: np.ndarray,
+                  alpha: float) -> np.ndarray:
         n = x.shape[1]
         z_1, a_1, _, a_2 = self.propagate(x)
         dz_2 = np.subtract(a_2, y)
@@ -63,22 +63,23 @@ class Classifier:
             activation_derivative(z_1, self.activation)
         dw_1 = np.dot(dz_1, x.T) / n
         db_1 = np.sum(dz_1, axis=1, keepdims=True) / n
-        self.w_1 = np.subtract(self.w_1, self.alpha * dw_1)
-        self.b_1 = np.subtract(self.b_1, self.alpha * db_1)
-        self.w_2 = np.subtract(self.w_2, self.alpha * dw_2)
-        self.b_2 = np.subtract(self.b_2, self.alpha * db_2)
+        self.w_1 = np.subtract(self.w_1, alpha * dw_1)
+        self.b_1 = np.subtract(self.b_1, alpha * db_1)
+        self.w_2 = np.subtract(self.w_2, alpha * dw_2)
+        self.b_2 = np.subtract(self.b_2, alpha * db_2)
         if np.isnan(self.w_1).any() or np.isnan(self.b_1).any() or \
                 np.isnan(self.w_2).any() or np.isnan(self.b_2).any():
             raise ValueError('NaN values detected')
         return a_2
 
-    def train(self, epochs: int = 200, batch_size: int = 1000) -> None:
+    def train(self, epochs: int = 200, batch_size: int = 1000,
+              alpha=0.10) -> None:
         batches = self.n // batch_size
         for i in range(epochs):
             for j in range(batches):
                 x = self.x[:, j * batch_size:(j + 1) * batch_size]
                 y = self.y[:, j * batch_size:(j + 1) * batch_size]
-                a_2 = self.back_prop(x, y)
+                a_2 = self.back_prop(x, y, alpha)
                 if i % 10 == 0:
                     print(
                         f'Epoch: {i} \nAccuracy: {self.accuracy(a_2, y)}')

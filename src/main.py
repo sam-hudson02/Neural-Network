@@ -10,7 +10,7 @@ def main():
     # save the data to csv
     print(np.argmax(y_test, axis=0))
     classifier = Classifier(x_train, y_train, activation=Activation.RELU)
-    classifier.train(200, batch_size=2000)
+    classifier.train(1000, batch_size=2000, alpha=0.05)
     accuracy, predictions = classifier.test(x_test, y_test)
     print(f'Accuracy: {accuracy}')
     print(f'Predictions: {np.argmax(predictions, axis=0)}')
