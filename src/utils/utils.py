@@ -1,11 +1,19 @@
 from enum import Enum
-import numpy as np
+import jax.numpy as np
 
 
 class Activation(Enum):
     RELU = 1
     SIGMOID = 2
     TANH = 3
+
+
+def mse(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
+    return np.mean(np.power(np.subtract(y_true, y_pred), 2))
+
+
+def mse_prime(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
+    return 2 * np.subtract(y_pred, y_true) / y_true.size
 
 
 def activation_func(x: np.ndarray, func: Activation) -> np.ndarray:

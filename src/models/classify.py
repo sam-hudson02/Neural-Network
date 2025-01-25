@@ -1,7 +1,8 @@
-import numpy as np
+import jax.numpy as np
 from utils.utils import Activation, activation_func, softmax, \
     activation_derivative
 from typing import Tuple
+from numpy.random import rand
 
 
 class Classifier:
@@ -42,10 +43,10 @@ class Classifier:
 
     def init_weights(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray,
                                     np.ndarray]:
-        w_1 = np.random.rand(self.classes, self.size) - 0.5
-        w_2 = np.random.rand(self.classes, self.classes) - 0.5
-        b_1 = np.random.rand(self.classes, 1) - 0.5
-        b_2 = np.random.rand(self.classes, 1) - 0.5
+        w_1 = np.asarray(rand(self.classes, self.size) - 0.5)
+        w_2 = np.asarray(rand(self.classes, self.classes) - 0.5)
+        b_1 = np.asarray(rand(self.classes, 1) - 0.5)
+        b_2 = np.asarray(rand(self.classes, 1) - 0.5)
         print(f'w_1: {w_1})')
         print(f'w_2: {w_2})')
         print(f'b_1: {b_1})')
@@ -89,7 +90,7 @@ class Classifier:
         correct = np.sum(predictions == np.argmax(y, axis=0))
         print(f'correct: {correct}')
         print(f'size: {y.shape[1]}')
-        return correct / y.shape[1]
+        return float(correct / y.shape[1])
 
     def test(self, x: np.ndarray, y: np.ndarray) -> Tuple[float, np.ndarray]:
         predictions = self.propagate(x)
