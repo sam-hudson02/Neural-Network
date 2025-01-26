@@ -1,13 +1,15 @@
 import pandas as pd
+import jax.numpy as jnp
 import numpy as np
 from utils.utils import one_hot
 from typing import Tuple
 import os
 from PIL import Image
+import pickle
 
 
-def load_mnist_data() -> Tuple[np.ndarray, np.ndarray, np.ndarray,
-                               np.ndarray]:
+def load_mnist_data() -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray,
+                               jnp.ndarray]:
     """
     Import the classify_data.csv file and return it as
     x: np.ndarray: The input data, where each column is a sample.
@@ -41,7 +43,35 @@ def load_mnist_data() -> Tuple[np.ndarray, np.ndarray, np.ndarray,
     # normalize the data
     X_train = X_train / 255
 
-    return X_test, one_hot(Y_test), X_train, one_hot(Y_train)
+    return jnp.asarray(X_test), one_hot(Y_test), \
+        jnp.asarray(X_train), one_hot(Y_train)
+
+
+def unpickle(file):
+    with open(file, 'rb') as fo:
+        dict = pickle.load(fo, encoding='bytes')
+    return dict
+
+
+def load_cifar_data():
+    """
+    Load the CIFAR-10 dataset.
+    """
+    folder = './data/cifar-10-batches-py/'
+    data_train = []
+    labels_train = []
+    for i in range(1, 6):
+        batch = unpickle(folder + f'data_batch_{i}')
+        data_train.append(batch[b'data'])
+        labels_train.append(batch[b'labels'])
+    test_batch = unpickle(folder + 'test_batch')
+    data_test = test_batch[b'data']
+    labels_test = jnp.asarray(test_batch[b'labels'])
+    labels_train = jnp.array(labels_train).reshape(-1)
+    data_train = np.asarray(data_train).T.reshape((3072, -1))
+    data_train = data_train / 255.
+    return jnp.asarray(data_test.T), one_hot(labels_test), \
+        jnp.asarray(data_train), one_hot(labels_train)
 
 
 def prep_image(image: Image.Image, res: int) -> np.ndarray:

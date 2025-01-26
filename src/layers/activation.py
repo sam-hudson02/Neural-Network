@@ -12,6 +12,7 @@ class Activation(Layer):
         return self.a_func.eval(input)
 
     def back_prop(self, grad: np.ndarray, alpha: float) -> np.ndarray:
+        print(grad.shape)
         return grad * self.a_func.derivative(self.input)
 
 

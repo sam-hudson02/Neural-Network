@@ -1,6 +1,6 @@
 import jax.numpy as np
 from layers.layer import Layer
-from utils.utils import softmax
+from utils.utils import stable_softmax
 from typing import Callable
 
 
@@ -19,7 +19,7 @@ class Network:
         for layer in self.layers:
             x = layer.prop(x)
         if self.softmax:
-            x = softmax(x)
+            x = stable_softmax(x)
         return x
 
     def back_prop(self, x: np.ndarray, y: np.ndarray,
@@ -32,13 +32,14 @@ class Network:
 
     def train(self, x: np.ndarray, y: np.ndarray, epochs: int = 500,
               alpha: float = 0.1, batch_size: int = 4000) -> None:
-        n = x.shape[1]
+        n = x.shape[0]
         batches = n // batch_size
         a = 0
+        print(f'x: {x.shape}')
         for i in range(epochs):
             for j in range(batches):
-                x_act = x[:, j * batch_size:(j + 1) * batch_size]
-                y_act = y[:, j * batch_size:(j + 1) * batch_size]
+                x_act = x[j * batch_size:(j + 1) * batch_size].T
+                y_act = y[j * batch_size:(j + 1) * batch_size].T
                 a = self.back_prop(x_act, y_act, alpha)
                 if i % 10 == 0 and j == 0:
                     print(

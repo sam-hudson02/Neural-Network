@@ -50,3 +50,20 @@ def softmax(x: np.ndarray) -> np.ndarray:
     if np.isnan(softmax).any():
         raise ValueError('Softmax returned nan values')
     return softmax
+
+
+def stable_softmax(x: np.ndarray) -> np.ndarray:
+    exps = np.exp(x - np.max(x))
+    y = exps / np.sum(exps, axis=0)
+    # check for any nan values
+    if np.isnan(y).any():
+        # find a column with nan values
+        for i in range(y.shape[1]):
+            if np.isnan(y[:, i]).any():
+                print(x[:, i])
+                tmp = np.exp(x[:, i]-np.max(x[:, i]))
+                print(print(tmp))
+                print(print(tmp / np.sum(tmp)))
+                break
+        raise ValueError('Softmax returned nan values')
+    return y
