@@ -1,5 +1,5 @@
 from enum import Enum
-import jax.numpy as np
+import numpy as np
 
 
 class Activation(Enum):
@@ -15,6 +15,8 @@ def mse(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
 def mse_prime(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
     return 2 * np.subtract(y_pred, y_true) / y_true.size
 
+def pad(num: float, length: int) -> str:
+    return f'{num:.{length}f}'
 
 def activation_func(x: np.ndarray, func: Activation) -> np.ndarray:
     if func == Activation.RELU:
@@ -62,8 +64,10 @@ def stable_softmax(x: np.ndarray) -> np.ndarray:
             if np.isnan(y[:, i]).any():
                 print(x[:, i])
                 tmp = np.exp(x[:, i]-np.max(x[:, i]))
-                print(print(tmp))
-                print(print(tmp / np.sum(tmp)))
-                break
-        raise ValueError('Softmax returned nan values')
+                print(tmp)
+                print(np.sum(tmp))
+                print(tmp / np.sum(tmp))
+                y[:, i] = tmp / np.sum(tmp)
+        if np.isnan(y).any():
+            raise ValueError('Got nan value')
     return y

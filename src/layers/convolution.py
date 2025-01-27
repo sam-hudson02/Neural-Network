@@ -1,10 +1,8 @@
 from layers.layer import Layer
 from typing import Tuple
-from jax.scipy.signal import correlate2d
+from scipy.signal import correlate2d, convolve2d
 from numpy.random import rand
-import jax.numpy as np
-import time
-from scipy.signal import fftconvolve
+import numpy as np
 
 
 class Convolution(Layer):
@@ -26,8 +24,6 @@ class Convolution(Layer):
         self.output: np.ndarray | None = None
 
     def prop(self, input: np.ndarray) -> np.ndarray:
-        start_time = time.time()
-        print(input.shape)
         images = input.shape[3]
         self.input = input
         self.output = np.zeros((self.filters * self.depth, self.height - 2,
@@ -44,19 +40,15 @@ class Convolution(Layer):
                     count += 1
                     channel = image[:, :, k]
                     filter = self.kernels[:, :, k, j]
-                    correlation = fftconvolve(channel, filter, "valid")
+                    correlation = correlate2d(channel, filter, "valid")
                     image_out += correlation + bias
                 image_outputs.append(image_out)
             image_outputs = np.asarray(image_outputs)
             outputs.append(image_outputs)
         self.output = np.asarray(outputs).T
-        end_time = time.time()
-        print(f'Convolution time: {end_time - start_time}')
-        print(f'Count: {count}')
         return self.output
 
     def back_prop(self, grad: np.ndarray, alpha: float) -> np.ndarray:
-        start_time = time.time()
         if self.input is None:
             raise ValueError('self.input is None')
 
@@ -74,17 +66,16 @@ class Convolution(Layer):
                 for k in range(self.depth):
                     channel = image[:, :, k]
                     grad_image = grad[:, :, j, i]
-                    error = fftconvolve(channel, grad_image, "valid")
+                    error = correlate2d(channel, grad_image, "valid")
                     depth_errors.append(error)
-                filter_errors.append(np.asarray(depth_errors).T)
+                filter_errors.append(np.asarray(depth_errors))
             filter_errors = np.asarray(filter_errors).T
             dk += filter_errors
 
         db = np.sum(grad, axis=3) / n
+        dk /= n
 
         self.kernels = np.subtract(self.kernels, alpha * dk)
         self.biases = np.subtract(self.biases, alpha * db)
-        end_time = time.time()
-        print(f'Convolution backprop time: {end_time - start_time}')
 
         return grad

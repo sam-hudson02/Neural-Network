@@ -1,4 +1,4 @@
-import jax.numpy as np
+import numpy as np
 from utils.utils import Activation, activation_func, softmax, \
     activation_derivative
 from typing import Tuple

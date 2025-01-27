@@ -1,5 +1,5 @@
 from layers.layer import Layer
-import jax.numpy as np
+import numpy as np
 from typing import Tuple
 
 
@@ -14,7 +14,6 @@ class Reshape(Layer):
         return np.reshape(input, (self.output_size, images))
 
     def back_prop(self, grad: np.ndarray, alpha: float) -> np.ndarray:
-        print(grad.shape)
         images = self.input.shape[3]
         return np.reshape(grad, (self.input_size[0], self.input_size[1],
                                  self.input_size[2], images))
