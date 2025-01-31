@@ -1,5 +1,7 @@
+import matplotlib.pyplot as plt
 from utils.alpha import exp_alpha, step_alpha
 from utils.data import load_cifar_10_data, load_mnist_data, load_cifar_data
+from utils.math_data import load_math_data
 import numpy as np
 from utils.utils import Activation, mse, mse_prime, one_hot
 from models.classify import Classifier
@@ -11,7 +13,6 @@ from models.nn import Network
 from utils.activation import ReLU, Sigmoid, Tanh
 import matplotlib
 matplotlib.use('module://matplotlib-backend-kitty')
-import matplotlib.pyplot as plt
 
 
 def network():
@@ -20,7 +21,6 @@ def network():
         Dense(784, 128),
         ActivationLayer(ReLU()),
         Dense(128, 10),
-        ActivationLayer(Sigmoid())
     ]
     x_train = x_train.T
     y_train = y_train.T
@@ -42,6 +42,58 @@ def old_classifier(x_test, y_test, x_train, y_train):
     print(f'Accuracy: {accuracy}')
     print(f'Predictions: {np.argmax(predictions, axis=0)}')
     print(f'Actual: {np.argmax(y_test, axis=0)}')
+
+
+def math_classify_conv():
+    x_test, y_test, x_train, y_train, meanings = load_math_data(
+        'data/math')
+    x_train = x_train[4000:]
+    y_train = y_train[4000:]
+    x_train = x_train.reshape(x_train.shape[0], 1, 28, 28)
+    x_test = x_test.reshape(x_test.shape[0], 1, 28, 28)
+    print(x_train.shape)
+    filters_1 = 6
+    layers = [
+        Convolution((28, 28, 1), filters_1, (3, 3)),
+        Reshape((26, 26, filters_1)),
+        Dense(26*26*filters_1, 128),
+        ActivationLayer(Tanh()),
+        Dense(128, len(meanings.keys())),
+    ]
+    network = Network(layers, softmax=True, loss=mse,
+                      loss_prime=mse_prime, verbose=True)
+    alpha = exp_alpha(0.5, 0.987)
+    network.train(x_train, y_train, epochs=200, alpha=alpha, batch_size=500)
+    predictions = network.prop(x_test)
+    accuracy = network.accuracy(predictions, y_test)
+    print(f'Accuracy: {accuracy}')
+    print(f'Predictions: {np.argmax(predictions, axis=0)}')
+    print(f'Actual: {np.argmax(y_test, axis=0)}')
+
+
+def math_classify():
+    x_test, y_test, x_train, y_train, meanings = load_math_data(
+        'data/math')
+    x_train = x_train[4000:]
+    y_train = y_train[4000:]
+    x_train = x_train.reshape(x_train.shape[0], 28 * 28)
+    x_test = x_test.reshape(x_test.shape[0], 28 * 28)
+    print(x_train.shape)
+    layers = [
+        Dense(28 * 28, 128),
+        ActivationLayer(Tanh()),
+        Dense(128, len(meanings.keys())),
+    ]
+    network = Network(layers, softmax=True, loss=mse,
+                      loss_prime=mse_prime, verbose=True)
+    alpha = exp_alpha(0.5, 0.987)
+    network.train(x_train, y_train, epochs=200, alpha=alpha, batch_size=500)
+    predictions = network.prop(x_test)
+    accuracy = network.accuracy(predictions, y_test)
+    print(f'Accuracy: {accuracy}')
+    print(f'Predictions: {np.argmax(predictions, axis=0)}')
+    print(f'Actual: {np.argmax(y_test, axis=0)}')
+
 
 def conv_mnist():
     x_test, y_test, x_train, y_train = load_mnist_data()
@@ -66,7 +118,8 @@ def conv_mnist():
 
 
 def conv_network():
-    x_train, _, y_train, x_test, _, y_test, _ = load_cifar_10_data('data/cifar-10-batches-py')
+    x_train, _, y_train, x_test, _, y_test, _ = load_cifar_10_data(
+        'data/cifar-10-batches-py')
     print(x_train.shape)
     y_train = one_hot(y_train).T
     x_train = x_train.reshape(x_train.shape[0], 3, 32, 32)
@@ -88,7 +141,7 @@ def conv_network():
 
 
 def main():
-    conv_mnist()
+    math_classify()
 
 
 if __name__ == '__main__':

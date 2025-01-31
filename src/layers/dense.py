@@ -2,6 +2,7 @@ from layers.layer import Layer
 from numpy.random import rand
 import numpy as np
 
+
 class Dense(Layer):
     def __init__(self, input_size: int, output_size: int):
         weights = rand(output_size, input_size) - 0.5
