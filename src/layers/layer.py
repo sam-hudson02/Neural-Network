@@ -12,6 +12,14 @@ class Layer:
     def back_prop(self, grad: np.ndarray, alpha: float) -> np.ndarray:
         raise (ValueError('method back_prop not implemented'))
 
+    def save(self, path: str, i: int) -> dict:
+        raise (ValueError('method save not implemented'))
+
+    def open(self, path: str, info: dict) -> None:
+        print('Warning: method open not implemented in',
+              self.__class__.__name__)
+        pass
+
     def __str__(self):
         # return class name
         return f'{self.__class__.__name__}'

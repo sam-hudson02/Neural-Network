@@ -4,6 +4,8 @@ from layers.layer import Layer
 from utils.utils import eta_fancy, stable_softmax, pad
 from typing import Callable
 import sys
+import os
+import json
 
 
 class Network:
@@ -59,10 +61,24 @@ class Network:
                         sys.stdout.write(f'\rEpoch: {i}, Accuracy: {self.accuracy(
                             a, y_act)}, Elapsed time: {elaped_time}, ETA: {eta}')
 
+    def save(self, path: str) -> None:
+        arch = {}
+        if not os.path.exists(path):
+            os.makedirs(path)
+        for i, layer in enumerate(self.layers):
+            arch[i] = layer.save(path, i)
+        if not os.path.exists(path):
+            os.makedirs(path)
+        with open(f'{path}/arch.json', 'w') as f:
+            json.dump(arch, f)
+
+    def open(self, path: str) -> None:
+        with open(f'{path}/arch.json', 'r') as f:
+            arch = json.load(f)
+        for i, info in arch.items():
+            self.layers[int(i)].open(path, info)
+
     def accuracy(self, a_2: np.ndarray, y: np.ndarray) -> str:
         predictions = np.argmax(a_2, axis=0)
         correct = np.sum(predictions == np.argmax(y, axis=0))
         return pad(round(float(correct / y.shape[1]), 4), 5)
-
-    def save(self, path: str) -> None:
-        pass

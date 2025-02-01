@@ -5,6 +5,8 @@ import numpy as np
 
 class Dense(Layer):
     def __init__(self, input_size: int, output_size: int):
+        self.input_size = input_size
+        self.output_size = output_size
         weights = rand(output_size, input_size) - 0.5
         self.w = np.asarray(weights)
         self.b = np.asarray(rand(output_size, 1)) - 0.5
@@ -31,3 +33,20 @@ class Dense(Layer):
 
         dx = np.dot(self.w.T, grad)
         return dx
+
+    def save(self, path: str, i: int) -> dict:
+        np.save(f'{path}/dense_{i}_w', self.w)
+        np.save(f'{path}/dense_{i}_b', self.b)
+        return {
+            'type': 'Dense',
+            'input_size': self.input_size,
+            'output_size': self.output_size,
+            'w': f'dense_{i}_w.npy',
+            'b': f'dense_{i}_b.npy'
+        }
+
+    def open(self, path: str, info: dict) -> None:
+        w_file = info['w']
+        self.w = np.load(f'{path}/{w_file}')
+        b_file = info['b']
+        self.b = np.load(f'{path}/{b_file}')
