@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from utils.alpha import exp_alpha, step_alpha
 from utils.data import load_cifar_10_data, load_mnist_data, load_cifar_data
-from utils.math_data import load_math_data
+from utils.math_data import load_math_data, load_math_meta
 import numpy as np
 from utils.utils import Activation, mse, mse_prime, one_hot
 from models.classify import Classifier
@@ -12,70 +12,14 @@ from layers.reshape import Reshape
 from models.nn import Network
 from utils.activation import ReLU, Sigmoid, Tanh
 import matplotlib
-matplotlib.use('module://matplotlib-backend-kitty')
-
-
-def network():
-    x_test, y_test, x_train, y_train = load_mnist_data()
-    layers = [
-        Dense(784, 128),
-        ActivationLayer(ReLU()),
-        Dense(128, 10),
-    ]
-    x_train = x_train.T
-    y_train = y_train.T
-    alpha = exp_alpha(0.5, 0.987)
-    network = Network(layers, softmax=True, loss=mse,
-                      loss_prime=mse_prime, verbose=True)
-    network.train(x_train, y_train, epochs=1000, alpha=alpha, batch_size=2000)
-    predictions = network.prop(x_test)
-    accuracy = network.accuracy(predictions, y_test)
-    print(f'Accuracy: {accuracy}')
-    print(f'Predictions: {np.argmax(predictions, axis=0)}')
-    print(f'Actual: {np.argmax(y_test, axis=0)}')
-
-
-def old_classifier(x_test, y_test, x_train, y_train):
-    classifier = Classifier(x_train, y_train, activation=Activation.RELU)
-    classifier.train(1000, batch_size=2000, alpha=0.05)
-    accuracy, predictions = classifier.test(x_test, y_test)
-    print(f'Accuracy: {accuracy}')
-    print(f'Predictions: {np.argmax(predictions, axis=0)}')
-    print(f'Actual: {np.argmax(y_test, axis=0)}')
-
-
-def math_classify_conv():
-    x_test, y_test, x_train, y_train, meanings = load_math_data(
-        'data/math')
-    x_train = x_train[4000:]
-    y_train = y_train[4000:]
-    x_train = x_train.reshape(x_train.shape[0], 1, 28, 28)
-    x_test = x_test.reshape(x_test.shape[0], 1, 28, 28)
-    print(x_train.shape)
-    filters_1 = 6
-    layers = [
-        Convolution((28, 28, 1), filters_1, (3, 3)),
-        Reshape((26, 26, filters_1)),
-        Dense(26*26*filters_1, 128),
-        ActivationLayer(Tanh()),
-        Dense(128, len(meanings.keys())),
-    ]
-    network = Network(layers, softmax=True, loss=mse,
-                      loss_prime=mse_prime, verbose=True)
-    alpha = exp_alpha(0.5, 0.987)
-    network.train(x_train, y_train, epochs=200, alpha=alpha, batch_size=500)
-    predictions = network.prop(x_test)
-    accuracy = network.accuracy(predictions, y_test)
-    print(f'Accuracy: {accuracy}')
-    print(f'Predictions: {np.argmax(predictions, axis=0)}')
-    print(f'Actual: {np.argmax(y_test, axis=0)}')
+# matplotlib.use('module://matplotlib-backend-kitty')
 
 
 def math_classify():
     x_test, y_test, x_train, y_train, meanings = load_math_data(
         'data/math')
-    x_train = x_train[4000:]
-    y_train = y_train[4000:]
+    # x_train = x_train[4000:]
+    # y_train = y_train[4000:]
     x_train = x_train.reshape(x_train.shape[0], 28 * 28)
     x_test = x_test.reshape(x_test.shape[0], 28 * 28)
     print(x_train.shape)
@@ -86,62 +30,59 @@ def math_classify():
     ]
     network = Network(layers, softmax=True, loss=mse,
                       loss_prime=mse_prime, verbose=True)
-    alpha = exp_alpha(0.5, 0.987)
-    network.train(x_train, y_train, epochs=200, alpha=alpha, batch_size=500)
-    predictions = network.prop(x_test)
-    accuracy = network.accuracy(predictions, y_test)
+
+    def alpha(i):
+        if i < 100:
+            return 0.5
+        else:
+            return 0.3
+
+    network.train(x_train, y_train, epochs=300, alpha=alpha, batch_size=500)
+    predictions = network.prop(x_test.T)
+    accuracy = network.accuracy(predictions, y_test.T)
+    network.save('models/math')
     print(f'Accuracy: {accuracy}')
     print(f'Predictions: {np.argmax(predictions, axis=0)}')
-    print(f'Actual: {np.argmax(y_test, axis=0)}')
-
-
-def conv_mnist():
-    x_test, y_test, x_train, y_train = load_mnist_data()
-    print(x_train.shape)
-    train_data = []
-    for i in range(x_train.shape[1]):
-        train_data.append(x_train[:, i].reshape((1, 28, 28)))
-    x_train = np.asarray(train_data)
-    print(x_train.shape)
-    layers = [
-        Convolution((28, 28, 1), 10, (3, 3)),
-        Reshape((26, 26, 10)),
-        Dense(26*26*10, 128),
-        ActivationLayer(Tanh()),
-        Dense(128, 10),
-    ]
-    y_train = y_train.T
-    network = Network(layers, softmax=True, loss=mse,
-                      loss_prime=mse_prime, verbose=True)
-    alpha = exp_alpha(0.5, 0.987)
-    network.train(x_train, y_train, epochs=200, alpha=alpha, batch_size=4000)
-
-
-def conv_network():
-    x_train, _, y_train, x_test, _, y_test, _ = load_cifar_10_data(
-        'data/cifar-10-batches-py')
-    print(x_train.shape)
-    y_train = one_hot(y_train).T
-    x_train = x_train.reshape(x_train.shape[0], 3, 32, 32)
-    for i in range(10):
-        print(y_train[i])
-        plt.imshow(x_train[i].T)
+    print(f'Actual: {np.argmax(y_test.T, axis=0)}')
+    for i in range(100):
+        key = y_test[i]
+        key = np.argmax(key)
+        pred = np.argmax(predictions.T[i], axis=0)
+        print(meanings[key])
+        print(meanings[pred])
+        plt.imshow(x_test[i].reshape((28, 28)))
         plt.show()
+
+
+def from_save():
+    x_test, y_test, x_train, y_train, meanings = load_math_data(
+        'data/test_math')
+    x_test = x_test.reshape(x_test.shape[0], 28 * 28)
     layers = [
-        Convolution((32, 32, 3), 6, (3, 3)),
-        Reshape((30, 30, 6)),
-        Dense(30*30*6, 128),
+        Dense(28 * 28, 128),
         ActivationLayer(Tanh()),
-        Dense(128, 10),
+        Dense(128, len(meanings.keys())),
     ]
     network = Network(layers, softmax=True, loss=mse,
                       loss_prime=mse_prime, verbose=True)
-    alpha = exp_alpha(0.5, 0.987)
-    network.train(x_train, y_train, epochs=1000, alpha=alpha, batch_size=5000)
+    network.open('models/math')
+    predictions = network.prop(x_test.T)
+    accuracy = network.accuracy(predictions, y_test.T)
+    print(f'Accuracy: {accuracy}')
+    print(f'Predictions: {np.argmax(predictions, axis=0)}')
+    print(f'Actual: {np.argmax(y_test.T, axis=0)}')
+    for i in range(10):
+        key = y_test[i]
+        key = np.argmax(key)
+        pred = np.argmax(predictions.T[i], axis=0)
+        print(meanings[str(key)])
+        print(meanings[str(pred)])
+        plt.imshow(x_test[i].reshape((28, 28)))
+        plt.show()
 
 
 def main():
-    math_classify()
+    from_save()
 
 
 if __name__ == '__main__':
