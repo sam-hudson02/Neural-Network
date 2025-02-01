@@ -6,7 +6,7 @@ import pandas as pd
 import json
 import matplotlib
 from utils.utils import one_hot
-matplotlib.use('module://matplotlib-backend-kitty')
+# matplotlib.use('module://matplotlib-backend-kitty')
 
 
 def load_math_data(path: str, folders: list[str] | None = None):
