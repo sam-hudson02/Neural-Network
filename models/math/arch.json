@@ -1,0 +1,1 @@
+{"0": {"type": "Dense", "input_size": 784, "output_size": 128, "w": "dense_0_w.npy", "b": "dense_0_b.npy"}, "1": {"type": "Activation", "activation": "tanh"}, "2": {"type": "Dense", "input_size": 128, "output_size": 82, "w": "dense_2_w.npy", "b": "dense_2_b.npy"}}

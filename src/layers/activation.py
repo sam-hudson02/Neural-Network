@@ -1,6 +1,6 @@
 from layers.layer import Layer
 from utils.activation import ActivationFunction
-import jax.numpy as np
+import numpy as np
 
 
 class Activation(Layer):
@@ -13,6 +13,12 @@ class Activation(Layer):
 
     def back_prop(self, grad: np.ndarray, alpha: float) -> np.ndarray:
         return grad * self.a_func.derivative(self.input)
+
+    def save(self, path: str, i: int) -> dict:
+        return {
+            'type': 'Activation',
+            'activation': self.a_func.name
+        }
 
 
 class Softmax(Layer):

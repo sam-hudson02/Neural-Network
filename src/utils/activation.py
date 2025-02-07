@@ -1,8 +1,9 @@
-import jax.numpy as np
+import numpy as np
 
 
 class ActivationFunction:
     def __init__(self):
+        self.name = self.__class__.__name__.lower()
         pass
 
     def eval(self, val: np.ndarray) -> np.ndarray:
@@ -13,6 +14,9 @@ class ActivationFunction:
 
 
 class ReLU(ActivationFunction):
+    def __init__(self):
+        self.name = 'relu'
+
     def eval(self, val: np.ndarray) -> np.ndarray:
         return np.maximum(0, val)
 
@@ -21,6 +25,9 @@ class ReLU(ActivationFunction):
 
 
 class Sigmoid(ActivationFunction):
+    def __init__(self):
+        self.name = 'sigmoid'
+
     def eval(self, val: np.ndarray) -> np.ndarray:
         return 1 / (1 + np.exp(-val))
 
@@ -29,6 +36,9 @@ class Sigmoid(ActivationFunction):
 
 
 class Tanh(ActivationFunction):
+    def __init__(self):
+        self.name = 'tanh'
+
     def eval(self, val: np.ndarray) -> np.ndarray:
         return np.tanh(val)
 

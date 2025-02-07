@@ -1,5 +1,5 @@
 from enum import Enum
-import jax.numpy as np
+import numpy as np
 
 
 class Activation(Enum):
@@ -8,12 +8,30 @@ class Activation(Enum):
     TANH = 3
 
 
+def eta_fancy(sl: float) -> str:
+    output = ''
+    if sl > (60 * 60):
+        hours = sl // (60 * 60)
+        output += f'{hours} hours, '
+        sl = sl % (60 * 60)
+    if sl > 60:
+        minutes = sl // 60
+        output += f'{minutes} minutes, '
+        sl = sl % 60
+    output += f'{int(sl)} seconds'
+    return output
+
+
 def mse(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
     return np.mean(np.power(np.subtract(y_true, y_pred), 2))
 
 
 def mse_prime(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
     return 2 * np.subtract(y_pred, y_true) / y_true.size
+
+
+def pad(num: float, length: int) -> str:
+    return f'{num:.{length}f}'
 
 
 def activation_func(x: np.ndarray, func: Activation) -> np.ndarray:
@@ -50,3 +68,18 @@ def softmax(x: np.ndarray) -> np.ndarray:
     if np.isnan(softmax).any():
         raise ValueError('Softmax returned nan values')
     return softmax
+
+
+def stable_softmax(x: np.ndarray) -> np.ndarray:
+    exps = np.exp(x - np.max(x))
+    y = exps / np.sum(exps, axis=0)
+    # check for any nan values
+    if np.isnan(y).any():
+        # find a column with nan values
+        for i in range(y.shape[1]):
+            if np.isnan(y[:, i]).any():
+                tmp = np.exp(x[:, i]-np.max(x[:, i]))
+                y[:, i] = tmp / np.sum(tmp)
+        if np.isnan(y).any():
+            raise ValueError('Got nan value')
+    return y
