@@ -5,6 +5,7 @@ from typing import Tuple
 import os
 from PIL import Image
 import pickle
+import matplotlib.pyplot as plt
 
 
 def load_mnist_data() -> Tuple[np.ndarray, np.ndarray, np.ndarray,
@@ -74,6 +75,7 @@ def load_cifar_data():
     return data_test.T, one_hot(labels_test), \
         data_train, one_hot(labels_train)
 
+
 def load_cifar_10_data(data_dir, negatives=False):
     """
     Return train_data, train_filenames, train_labels, test_data, test_filenames, test_labels
@@ -104,13 +106,16 @@ def load_cifar_10_data(data_dir, negatives=False):
         if i == 1:
             cifar_train_data = cifar_train_data_dict[b'data']
         else:
-            cifar_train_data = np.vstack((cifar_train_data, cifar_train_data_dict[b'data']))
+            cifar_train_data = np.vstack(
+                (cifar_train_data, cifar_train_data_dict[b'data']))
         cifar_train_filenames += cifar_train_data_dict[b'filenames']
         cifar_train_labels += cifar_train_data_dict[b'labels']
 
-    cifar_train_data = cifar_train_data.reshape((len(cifar_train_data), 3, 32, 32))
+    cifar_train_data = cifar_train_data.reshape(
+        (len(cifar_train_data), 3, 32, 32))
     if negatives:
-        cifar_train_data = cifar_train_data.transpose(0, 2, 3, 1).astype(np.float32)
+        cifar_train_data = cifar_train_data.transpose(
+            0, 2, 3, 1).astype(np.float32)
     else:
         cifar_train_data = np.rollaxis(cifar_train_data, 1, 4)
     cifar_train_filenames = np.array(cifar_train_filenames)
@@ -128,9 +133,11 @@ def load_cifar_10_data(data_dir, negatives=False):
     cifar_test_filenames = cifar_test_data_dict[b'filenames']
     cifar_test_labels = cifar_test_data_dict[b'labels']
 
-    cifar_test_data = cifar_test_data.reshape((len(cifar_test_data), 32, 32, 3))
+    cifar_test_data = cifar_test_data.reshape(
+        (len(cifar_test_data), 32, 32, 3))
     if negatives:
-        cifar_test_data = cifar_test_data.transpose(0, 2, 3, 1).astype(np.float32)
+        cifar_test_data = cifar_test_data.transpose(
+            0, 2, 3, 1).astype(np.float32)
     else:
         cifar_test_data = np.rollaxis(cifar_test_data, 1, 4)
     cifar_test_filenames = np.array(cifar_test_filenames)
@@ -138,7 +145,6 @@ def load_cifar_10_data(data_dir, negatives=False):
 
     return cifar_train_data, cifar_train_filenames, cifar_train_labels, \
         cifar_test_data, cifar_test_filenames, cifar_test_labels, cifar_label_names
-
 
 
 def prep_image(image: Image.Image, res: int) -> np.ndarray:
@@ -187,4 +193,16 @@ def covid_image_data(res: int = 128) -> Tuple[np.ndarray, np.ndarray]:
     y = data[:, :3].T
     print(x.shape)
     print(y.shape)
+    return x, y
+
+
+def load_sin(data_points: int = 2000,
+             noise: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Load the sin dataset.
+    """
+    x = np.linspace(0, 2 * np.pi, data_points).reshape(data_points, 1)
+    y = np.sin(x).reshape(data_points, 1)
+    if noise:
+        y += np.random.normal(0, 0.1, data_points).reshape(data_points, 1)
     return x, y

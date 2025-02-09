@@ -39,11 +39,12 @@ class Network:
 
     def train(self, x: np.ndarray, y: np.ndarray, epochs: int = 500,
               batch_size: int = 4000,
-              alpha: Callable[[int], float] = lambda _: 0.01) -> None:
+              alpha: Callable[[int], float] = lambda _: 0.01) -> list[float]:
         n = x.shape[0]
         batches = n // batch_size
         a = 0
         start_time = time()
+        loss_history = []
         for i in range(epochs):
             for j in range(batches):
                 batch_start = time()
@@ -60,6 +61,8 @@ class Network:
                         elaped_time = round(time() - start_time, 2)
                         sys.stdout.write(f'\rEpoch: {i}, Accuracy: {self.accuracy(
                             a, y_act)}, Elapsed time: {elaped_time}, ETA: {eta}')
+            loss_history.append(self.loss(y_act, a))
+        return loss_history
 
     def save(self, path: str) -> None:
         arch = {}
