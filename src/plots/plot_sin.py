@@ -62,17 +62,32 @@ def sin_gif(epoch: int = 500):
                                  batch_size=200)
             predictions = network.prop(x.T)
             loss.append(plt.plot(np.log(loss_history), color='r'))
-            preds.append(plt.plot(x, predictions.T, color='r'))
+            preds.append(predictions.T)
             
             #plt.plot(x, y)
             #plt.plot(x, predictions.T)
+
+    frames = len(preds)
+ 
+    def animate(frames):
+        
+        plt.cla()
+        ax.set_xlim([0, 2*np.pi])
+        ax.set_ylim([-1-0.5, 1+0.5])
+        ax.plot(x,y)
+        yp = preds[frames]
+        ax.plot(x,yp)
+        
+        
     
-    plt.plot(x,y, color='b')
-    ani = animation.ArtistAnimation(fig, preds, interval=500,
-                                   repeat_delay=1000)
+    
+    #plt.plot(x, y, color='b')
+    anim = animation.FuncAnimation(fig, func=animate, interval=500, frames=range(0, frames))
+    #ani = animation.ArtistAnimation(fig, preds, interval=500,
+    #                              repeat_delay=1000)
     
     plt.show()
-    plt.clf()
+    
 
 
     

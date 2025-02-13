@@ -13,6 +13,8 @@ from models.nn import Network
 from utils.activation import ReLU, Sigmoid, Tanh
 import matplotlib
 from utils.reddit_scrape import load_reddit_data
+import matplotlib.animation as animation
+from plots.plot_sin import sin_gif
 # matplotlib.use('module://matplotlib-backend-kitty')
 
 
@@ -145,7 +147,7 @@ def sin_fit():
 
 
 def main():
-    sin_fit()
+    sin_gif(400)
 
 
 if __name__ == '__main__':
