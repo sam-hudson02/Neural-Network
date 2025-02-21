@@ -45,16 +45,23 @@
 
 \section{Mathematical background}
 \subsection{Introduction}
-Our neural network code is created with a modular design, where each layer of the network is an instance of its respective layer class, which inherits from the base class \texttt{Layer}. This allows for quick and easy creation and changes to the network architecture. To achieve this, however, we need to compute the loss gradient with repect to each layer regardless of the layer that came before it. We find that the chain rule tells us that all we need to compute the gradient of a given layer is the output gradient of that layer.
+Our neural network code is created with a modular design, where each layer of the 
+network is an instance of its respective layer class, which inherits from the base 
+class \texttt{Layer}. This allows for quick and easy creation and changes to the 
+network architecture. To achieve this, however, we need to compute the loss gradient 
+with repect to each layer regardless of the layer that came before it. We find that the 
+chain rule tells us that all we need to compute the gradient of a given layer is the 
+output gradient of that layer.
 We can show this by the equation,
 \begin{equation}
     \frac{\partial L}{\partial \mathbf{W}_i} = \frac{\partial L}{\partial \mathbf{Y}_i} \frac{\partial \mathbf{Y}_i}{\partial \mathbf{W}_i}
 \end{equation}
 where $L$ is the loss function, $\frac{\partial L}{\partial \mathbf{Y}_i}$ is the output 
 gradient of layer $i$.
-Since for layer $i$, the output $\mathbf{Y}_i$ is equal to the input $\mathbf{X}_{i+1}$ of the next layer 
-$i+1$.
-We also need to compute the input gradient with respect to each layer and return it for use of the previous layer, for which it becomes the output graident. 
+Since for layer $i$, the output $\mathbf{Y}_i$ is equal to the input $\mathbf{X}_{i+1}$ 
+of the next layer $i+1$.
+We also need to compute the input gradient with respect to each layer and return it for 
+use of the previous layer, for which it becomes the output graident. 
 \begin{equation}
     \frac{\partial L}{\partial \mathbf{Y}_i} = \frac{\partial L}{\partial \mathbf{X}_{i+1}} 
 \end{equation}
@@ -95,7 +102,11 @@ Our dense or fully connected layer forward propagation is defined by the equatio
 \begin{equation}
     \mathbf{Y} = \mathbf{W} \mathbf{X} + \mathbf{B}
 \end{equation}
-where $\mathbf{X}$ is the input, $\mathbf{W}$ is the weight matrix, $\mathbf{B}$ is the bias vector, and $\mathbf{Y}$ is the output. The weights matrix is of size $n \times m$ where $n$ is the number of input features and $m$ is the number of output features. The bias vector is of size $m$. If the input matrix is of size $n \times o$ where $o$ is the number of samples, then the output matrix is of size $m \times o$. 
+where $\mathbf{X}$ is the input, $\mathbf{W}$ is the weight matrix, $\mathbf{B}$ is the 
+bias vector, and $\mathbf{Y}$ is the output. The weight matrix is of size $n \times m$ 
+where $n$ is the number of output features and $m$ is the number of input features. 
+The bias vector is of size $m$. If the input matrix is of size $m \times o$ where $o$ 
+is the number of samples, then the output matrix is of size $n \times o$. 
 We can write the $i$-th element of the $b$-th output vector in a batch of outputs as,
 \begin{equation}
     y_i^{[b]} = \sum_{j=1}^{n} w_{i,j} x_j^{[b]} + b_i
@@ -107,9 +118,13 @@ respect to the weigth matrix is given by,
 \begin{equation}
     \frac{\partial L}{\partial \mathbf{W}} = \frac{\partial L}{\partial \mathbf{Y}} \frac{\partial \mathbf{Y}}{\partial \mathbf{W}}
 \end{equation}
-. Within our backward propagation method we are given the output gradient $\frac{\partial L}{\partial \mathbf{Y}}$ as an argument. This leaves us to compute $\frac{\partial \mathbf{Y}}{\partial \mathbf{W}}$. For any particular element of the gradient $\frac{\partial \mathbf{Y}}{\partial \mathbf{W}}$ we can substitute equation \ref{eq:paticular_output} into the equation,
+. Within our backward propagation method we are given the output gradient 
+$\frac{\partial L}{\partial \mathbf{Y}}$ as an argument. This leaves us to compute 
+$\frac{\partial \mathbf{Y}}{\partial \mathbf{W}}$. For any particular element of the 
+gradient $\frac{\partial \mathbf{Y}}{\partial \mathbf{W}}$ we can substitute equation 
+\ref{eq:paticular_output} into the equation,
 \begin{equation}
-    \frac{\partial y^{[b]}_t}{\partial w_{i,j}} = \frac{\partial}{\partial w_{t,j}} \left( \sum_{j=1}^{n} w_{i,j} x_j^{[b]} + b_i \right) = 
+    \frac{\partial y^{[b]}_t}{\partial w_{i,j}} = \frac{\partial}{\partial w_{i,j}} \left( \sum_{j=1}^{n} w_{t,j} x_j^{[b]} + b_t \right) = 
     \begin{cases}
         x_j^{[b]} & \text{if } i = t \\
         0 & \text{otherwise}
@@ -128,13 +143,15 @@ matrix, we have,
     \end{bmatrix}
     \label{eq:dense_grad_matrix}
 \end{equation}
-. It follows from equation \ref{eq:dense_grad_particular} that the gradient of the loss function with respect a particular weight $w_{i,j}$ is given by,
+. It follows from equation \ref{eq:dense_grad_particular} that the gradient of the loss 
+function with respect a particular weight $w_{i,j}$ is given by,
 \begin{equation}
     \frac{\partial L}{\partial w_{i,j}} = \sum_{b=1}^{o} \frac{\partial L}{\partial y^{[b]}_i} x_j^{[b]}
     \label{eq:dense_grad}
 \end{equation}
 . Substituting equation \ref{eq:dense_grad} into equation \ref{eq:dense_grad_matrix} we
-find the that final gradient of the loss function with respect to the weight matrix is given by,
+find the that final gradient of the loss function with respect to the weight matrix is 
+given by,
 \begin{equation}
     \frac{\partial L}{\partial \mathbf{W}} = \frac{\partial L}{\partial \mathbf{Y}} \mathbf{X}^T
 \end{equation}
@@ -143,8 +160,10 @@ The error gradient with respect to the bias vector is given by,
 \begin{equation}
     \frac{\partial L}{\partial \mathbf{B}} = \frac{\partial L}{\partial \mathbf{Y}} \frac{\partial \mathbf{Y}}{\partial \mathbf{B}}
 \end{equation}
-. Again, we are given the output gradient $\frac{\partial L}{\partial \mathbf{Y}}$ as an argument, so our task is to compute $\frac{\partial \mathbf{Y}}{\partial \mathbf{B}}$.
-Referencing equation \ref{eq:paticular_output}, we can see that the gradient of the output with respect to the bias vector is given by,
+. Again, we are given the output gradient $\frac{\partial L}{\partial \mathbf{Y}}$ as 
+an argument, so our task is to compute $\frac{\partial \mathbf{Y}}{\partial \mathbf{B}}$.
+Referencing equation \ref{eq:paticular_output}, we can see that the gradient of the 
+output with respect to the bias vector is given by,
 \begin{equation}
     \frac{\partial y^{[b]}_i}{\partial b_j} = \frac{\partial}{\partial b_j} \left( \sum_{j=1}^{n} w_{i,j} x_j^{[b]} + b_i \right) = 
     \begin{cases}
@@ -152,7 +171,8 @@ Referencing equation \ref{eq:paticular_output}, we can see that the gradient of 
         0 & \text{otherwise}
     \end{cases}
 \end{equation}
-. Representing the gradient of the loss function with respect to the bias vector as a vector, we have,
+. Representing the gradient of the loss function with respect to the bias vector as a 
+vector, we have,
 \begin{equation}
     \frac{\partial L}{\partial \mathbf{B}} = 
     \begin{bmatrix}
@@ -162,19 +182,24 @@ Referencing equation \ref{eq:paticular_output}, we can see that the gradient of 
         \frac{\partial L}{\partial b_m}
     \end{bmatrix}
 \end{equation}
-. It follows that the gradient of the loss function with respect to a particular bias $b_i$ is given by,
+. It follows that the gradient of the loss function with respect to a particular bias 
+$b_i$ is given by,
 \begin{equation}
     \frac{\partial L}{\partial b_i} = \sum_{b=1}^{o} \frac{\partial L}{\partial y^{[b]}_i}
 \end{equation}
+which is simply the sum of the loss gradients with respect to the output.
 \subsubsection{Loss Gradient with respect to the Input}
 \subsection{Activation Functions}
 Activation functions are used to introduce non-linearity into our neural network. We 
-used a total of four activation functions in our code, the ReLU, Sigmoid, Tanh, and Softmax functions. Since all activation functions are not trainable, we only need to compute the input gradient. The input gradient is given by,
+used a total of four activation functions in our code, the ReLU, Sigmoid, Tanh, and 
+Softmax functions. Since all activation functions are not trainable, we only need to 
+compute the input gradient. The input gradient is given by,
 \begin{equation}
     \frac{\partial L}{\partial \mathbf{X}} = \frac{\partial L}{\partial \mathbf{Y}} \frac{\partial \mathbf{Y}}{\partial \mathbf{X}} 
     \label{eq:input_gradient_activation}
 \end{equation}
-. Hence, for each activation function we simply need to compute the derivative of the function with respect to the input.
+. Hence, for each activation function we simply need to compute the derivative of the 
+function with respect to the input.
 \subsubsection{ReLU}
 The ReLU function is defined as,
 \begin{equation}
@@ -284,6 +309,90 @@ Hence, the input gradient is given by,
     \frac{\partial L}{\partial \mathbf{Y}} f'(\mathbf{X}) = 
     \frac{\partial L}{\partial \mathbf{Y}} (1 - f(\mathbf{X})^2)
 \end{equation}
-\section{Convolutional Layer}
+\subsubsection{Softmax}
+The softmax function is a unique activation function, that usually is only used on the 
+output layer of a neural network. The softmax function is used to convert the output of 
+a layer into a probability distribution. This is incredibly useful for classification 
+problems. The softmax function is used on a vector of $n$ elements, and is defined as,
+\begin{equation}
+    f(x_i) = \frac{e^{x_i}}{\sum_{j=1}^{n} e^{x_j}}
+\end{equation}
+where $x_i$ is the $i$-th component of the vector and $f(x_i)$ is the probability of the $i$-th component of the vector.
+\subsection{Convolutional Layer}
+\subsubsection{Forward Propagation}
+The convolutional layer is a layer that takes a 3 dimensional input, where the first 
+two dimensions are the height and width of the input (usually pixel values of an 
+image), and the third dimension is the of channels of the input. The convolutional 
+layer is defined by the equation,
+\begin{equation}
+    \mathbf{Y}_{i}^{[b]} = \sum_{j=1}^n \mathbf{X}_{j}^{[b]} \ast  \mathbf{F}_{j,i} + \mathbf{B}_{i}
+\end{equation}
+where $\mathbf{Y}_{i}^{[b]}$ is the $i$-th channel of the $b$-th sample of the output , 
+$\mathbf{X}_{j}^{[b]}$ is the $j$-th channel of the $b$-th sample of the input, 
+$\mathbf{F}_{j,i}$ is the $j$-th channel of the $i$-th filter, $\mathbf{B}_{i}$ is the 
+$i$-th bias vector and $\ast$ is the convolution operator. The convolution operator 
+takes two 2-dimensional matrices and performs the following operation,
 \section{Loss Functions}
+\subsection{Mean Squared Error}
+The mean squared error is defined as,
+\begin{equation}
+    L = \frac{1}{o} \sum_{i=1}^{o} \sum_{j=1}^{n} (y_{i,j} - \hat{y}_{i,j})^2
+\end{equation}
+where $o$ is the number of samples, $n$ is the number of output features, $y_{i,j}$ is 
+the $j$-th component of the $i$-th sample, and $\hat{y}_{i,j}$ is the $j$-th predicted 
+component of the $i$-th sample. The derivative of the loss function with respect to the 
+final output ($\mathbf{\hat{Y}}$) is given by,
+\begin{equation}
+    \frac{\partial L}{\partial \mathbf{\hat{Y}}} = \frac{2}{o} (\mathbf{\hat{Y}} - \mathbf{Y})
+\end{equation}
+. The output of this function is then passed to the output layer for back propagation.
+The mean squared error loss function is used extensively for regression problems.
+\subsection{Cross Entropy}
+The cross entropy loss function is defined as,
+\begin{equation}
+    L = -\frac{1}{o} \sum_{b=1}^{o} \sum_{i=1}^{n} y_{i}^{[b]} \log(\hat{y}_{i}^{[b]})
+\end{equation}
+where $o$ is the number of samples, $n$ is the number of output features, $y_{i}^{[b]}$
+is the $i$-th component of the $b$-th sample, and $\hat{y}_{i}^{[b]}$ is the $i$-th 
+predicted component of the $b$-th sample. The cross entropy loss function is used
+primarily for classification problems. Since the softmax activation function is often
+found on the output layer of a classification network, it is useful to compute the 
+derivative of the loss function with respect to a softmaxed output. Considering 
+a softmaxed output, the loss function becomes,
+\begin{equation}
+    L = -\frac{1}{o}\sum_{b=1}^{o}\sum_{i=1}^{n}y_{i}^{[b]}\log(\text{Softmax}(z^{[b]}_{i}))
+\end{equation}
+where $z^{[b]}_{i}$ is the $i$-th component of the $b$-th sample of the output of the
+non-softmaxed output layer.
+Looking at just the the loss function for a single sample, we can see that the 
+derivative with respect to the output layer is:
+\begin{align*}
+    L_{i} &= -\sum_{j=1}^{10}y_{j}\log(a_{j}) \\
+    \frac{\partial L_{i}}{\partial z^{[2]}_{i}} &= - \sum_{k=1}^{10}y_{k}\frac{\partial
+        \log(a_{k})}{\partial z^{[2]}_{i}} \\
+    &= - \sum_{k=1}^{10}y_{k}\frac{1}{a_{k}}\frac{\partial a_{k}}{\partial z^{[2]}_{i}} \\
+\end{align*}
+The derivative of the softmax function is:
+\begin{equation}
+    \frac{\partial a_{k}}{\partial z^{[2]}_{i}} = \begin{cases}
+        a_{k}(1-a_{k}) & \text{if } k = i \\
+        -a_{k}a_{i} & \text{if } k \neq i
+    \end{cases}
+\end{equation}
+Hence:
+\begin{align*}
+    \frac{\partial L_{i}}{\partial z^{[2]}_{i}} &= -y_{j}(1-a_{j}) - \sum_{k \neq j}y_{k}a_{j}\\
+                                                &= a_{j} \left( y_{j} + \sum_{k \neq j}y_{k} \right) - y_{j} \\
+\end{align*}
+Since $\sum_{k}y_{k} = 1$ and $y_{j} + \sum_{k \neq i}y_{k} = 1$, we have:
+\begin{equation}
+    \frac{\partial L_
+    {i}}{\partial z^{[2]}_{i}} = a_{j} - y_{j}
+\end{equation}
+
+Hence:
+\begin{equation}
+    \frac{\partial L}{\partial 
+    Z} = \hat{Y} - Y
+\end{equation}
 \end{document}
