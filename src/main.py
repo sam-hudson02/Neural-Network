@@ -84,6 +84,37 @@ def from_save():
         plt.show()
 
 
+def conv():
+    x_test, y_test, x_train, y_train = load_mnist_data()
+    print(x_train.shape)
+    print(x_test.shape)
+    x_train = x_train.reshape(x_train.shape[1], 1, 28, 28)
+    filters_1 = 5
+    filters_2 = 10
+    layers = [
+        Convolution((28, 28, 1), filters_1, (3, 3)),
+        ActivationLayer(ReLU()),
+        Convolution((26, 26, filters_1), filters_2, (3, 3)),
+        ActivationLayer(ReLU()),
+        Reshape((24, 24, filters_2)),
+        Dense(24 * 24 * filters_2, 10)
+    ]
+    print(x_train.shape)
+    network = Network(layers, softmax=True, loss=mse,
+                      loss_prime=mse_prime, verbose=True)
+
+    def alpha(i):
+        return 0.01
+
+    loss = network.train(x_train, y_train.T, epochs=200,
+                         alpha=alpha, batch_size=500)
+    predictions = network.prop(x_test)
+    accuracy = network.accuracy(predictions, y_test)
+    print(f'Accuracy: {accuracy}')
+    print(f'Predictions: {np.argmax(predictions, axis=0)}')
+    print(f'Actual: {np.argmax(y_test, axis=0)}')
+
+
 def reddit_classify():
     x_test, y_test, x_train, y_train = load_reddit_data()
     layers = [
@@ -115,9 +146,9 @@ def sin_fit():
     x, y = load_sin()
     layers = [
         Dense(1, 128),
-        ActivationLayer(ReLU()),
+        ActivationLayer(Sigmoid()),
         Dense(128, 256),
-        ActivationLayer(ReLU()),
+        ActivationLayer(Tanh()),
         Dense(256, 128),
         ActivationLayer(ReLU()),
         Dense(128, 1),
@@ -125,14 +156,14 @@ def sin_fit():
 
     def alpha(i):
         if i < 100:
-            return 0.00005
+            return 0.00002
         else:
             return 0.00002
 
     network = Network(layers, softmax=False, loss=mse,
                       loss_prime=mse_prime, verbose=True)
 
-    loss_history = network.train(x, y, epochs=3000, alpha=alpha,
+    loss_history = network.train(x, y, epochs=13000, alpha=alpha,
                                  batch_size=200)
     predictions = network.prop(x.T)
     print(f'Predictions: {predictions}')
@@ -147,7 +178,7 @@ def sin_fit():
 
 
 def main():
-    sin_gif(400)
+    conv()
 
 
 if __name__ == '__main__':

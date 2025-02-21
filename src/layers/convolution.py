@@ -58,8 +58,8 @@ class Convolution(Layer):
 
         dk = np.zeros((self.kernel_height, self.kernel_width,
                       self.depth, self.filters))
-        # dx = np.zeros((self.depth, self.height, self.width))
 
+        dx = np.zeros((self.height, self.width, self.depth, n))
         for i in range(n):
             image = self.input[:, :, :, i]
             filter_errors = []
@@ -70,17 +70,20 @@ class Convolution(Layer):
                     grad_image = grad[:, :, j, i]
                     error = correlate2d(channel, grad_image, "valid")
                     depth_errors.append(error)
+                    kernel = self.kernels[:, :, k, j]
+                    dx[:, :, k, i] = convolve2d(grad_image, kernel, "full")
                 filter_errors.append(np.asarray(depth_errors))
             filter_errors = np.asarray(filter_errors).T
             dk += filter_errors
 
         db = np.sum(grad, axis=3) / n
-        dk /= n
+
+        dk = dk / n
 
         self.kernels = np.subtract(self.kernels, alpha * dk)
         self.biases = np.subtract(self.biases, alpha * db)
 
-        return grad
+        return dx
 
     def save(self, path: str, i: int) -> dict:
         np.save(f'{path}/convolution_{i}_k', self.kernels)
