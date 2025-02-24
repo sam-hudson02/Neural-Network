@@ -22,12 +22,20 @@ def eta_fancy(sl: float) -> str:
     return output
 
 
-def mse(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
-    return np.mean(np.power(np.subtract(y_true, y_pred), 2))
+def mse(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    return float(np.mean(np.power(np.subtract(y_true, y_pred), 2)))
 
 
 def mse_prime(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
     return 2 * np.subtract(y_pred, y_true) / y_true.size
+
+
+def cce(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
+    return -np.sum(y_true * np.log(y_pred))
+
+
+def cce_softmax_prime(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
+    return y_pred - y_true
 
 
 def pad(num: float, length: int) -> str:
