@@ -189,6 +189,106 @@ $b_i$ is given by,
 \end{equation}
 which is simply the sum of the loss gradients with respect to the output.
 \subsubsection{Loss Gradient with respect to the Input}
+The error gradient with respect to the input is given by,
+\begin{equation}
+    \frac{\partial L}{\partial \mathbf{X}} = \frac{\partial L}{\partial \mathbf{Y}} \frac{\partial \mathbf{Y}}{\partial \mathbf{X}}
+\end{equation}
+. Refering back to equation \ref{eq:paticular_output}, we can substitute the equaiton 
+for the output. Hence,
+\begin{equation}
+    \frac{\partial y^{[b]}_i}{\partial x_j^{[b]}} = \frac{\partial}{\partial x_j^{[b]}} \left( \sum_{j=1}^{n} w_{i,j} x_j^{[b]} + b_i \right) = w_{i,j}
+\end{equation}
+. Hence for the $b$-th sample of the input, the error gradient with respect to the input
+is, 
+\begin{equation}
+    \frac{\partial L}{\partial x^{[b]}_i} = \sum_{j=1}^{n} \frac{\partial L}{\partial y^{[b]}_j} \frac{\partial y^{[b]}_j}{\partial x^{[b]}_i} =
+    \sum_{j=1}^{n} \frac{\partial L}{\partial y^{[b]}_j} w_{j,i}
+\end{equation}
+. We find that this equation can expanded to all samples in the batch and the
+equation,
+\begin{equation}
+    \frac{\partial L}{\partial \mathbf{X}} = \mathbf{W}^T \frac{\partial L}{\partial \mathbf{Y}}
+\end{equation}
+represents the full gradient of the loss function with respect to the input.
+\subsection{Convolutional Layer}
+\subsubsection{Forward Propagation}
+The convolutional layer is a layer that takes a 3 dimensional input, where the first 
+two dimensions are the height and width of the input (usually pixel values of an 
+image), and the third dimension is the of channels of the input. The convolutional 
+layer is defined by the equation,
+\begin{equation}
+    \mathbf{Y}_{i}^{[b]} = \sum_{j=1}^n \mathbf{X}_{j}^{[b]} \ast  \mathbf{F}_{j,i} + \mathbf{B}_{i}
+\end{equation}
+where $\mathbf{Y}_{i}^{[b]}$ is the $i$-th channel of the $b$-th sample of the output , 
+$\mathbf{X}_{j}^{[b]}$ is the $j$-th channel of the $b$-th sample of the input, 
+$\mathbf{F}_{j,i}$ is the $j$-th channel of the $i$-th filter, $\mathbf{B}_{i}$ is the 
+$i$-th bias vector and $\ast$ is the convolution operator. The convolution operator 
+is a operation that takes a filter in the form of a 2d matrix and an in input in the
+form of a 2d matrix, the filter slides of the input and computes the sum of the 
+element-wise product of the filter and the input. For the example the convolution
+of a $2 \times 2$ filter and a $3 \times 3$ input is shown below:
+\begin{equation}
+    \begin{bmatrix}
+        x_{1,1} & x_{1,2} & x_{1,3} \\
+        x_{2,1} & x_{2,2} & x_{2,3} \\
+        x_{3,1} & x_{3,2} & x_{3,3} \\
+    \end{bmatrix} \ast
+    \begin{bmatrix}
+        f_{1,1} & f_{1,2} \\
+        f_{2,1} & f_{2,2} \\
+    \end{bmatrix} =
+    \begin{bmatrix}
+        o_{1,1} & o_{1,2} \\
+        o_{2,1} & o_{2,2} \\
+    \end{bmatrix}
+\end{equation}
+where
+\begin{equation}
+\begin{align*}
+    o_{1,1} &= x_{1,1}f_{1,1} + x_{1,2}f_{1,2} + x_{2,1}f_{2,1} + x_{2,2}f_{2,2}\\ 
+    o_{1,2} &= x_{1,2}f_{1,1} + x_{1,3}f_{1,2} + x_{2,2}f_{2,1} + x_{2,3}f_{2,2}\\
+    o_{2,1} &= x_{2,1}f_{1,1} + x_{2,2}f_{1,2} + x_{3,1}f_{2,1} + x_{3,2}f_{2,2}\\
+    o_{2,2} &= x_{2,2}f_{1,1} + x_{2,3}f_{1,2} + x_{3,2}f_{2,1} + x_{3,3}f_{2,2}.\\
+\end{align*}
+\end{equation}
+\subsubsection{Loss gradient with respect to the filter}
+The loss gradient with respect to the filter is given by,
+\begin{equation}
+    \frac{\partial L}{\partial \mathbf{F}} = \frac{\partial L}{\partial \mathbf{Y}} \frac{\partial \mathbf{Y}}{\partial \mathbf{F}}.
+\end{equation}
+Analyzing a simple case with a single kernel, a single input channel and a single sample
+for a $3 \times 3$ input and a $2 \times 2$ filter, we can see that the elements of the 
+output are given by,
+\begin{equation}
+\begin{align*}
+    y_{1,1} &= x_{1,1}f_{1,1} + x_{1,2}f_{1,2} + x_{2,1}f_{2,1} + x_{2,2}f_{2,2} + 
+    b_{11} \\
+    y_{1,2} &= x_{1,2}f_{1,1} + x_{1,3}f_{1,2} + x_{2,2}f_{2,1} + x_{2,3}f_{2,2} + 
+    b_{12} \\
+    y_{2,1} &= x_{2,1}f_{1,1} + x_{2,2}f_{1,2} + x_{3,1}f_{2,1} + x_{3,2}f_{2,2} + 
+    b_{21} \\
+    y_{2,2} &= x_{2,2}f_{1,1} + x_{2,3}f_{1,2} + x_{3,2}f_{2,1} + x_{3,3}f_{2,2} +
+    b_{22}.
+\end{align*}
+\end{equation}
+Hence, using the chain rule the equaiton
+\begin{equation}
+    \frac{\partial L}{\partial f_{1,1}} = \frac{\partial L}{\partial y_{1,1}} \frac{\partial y_{1,1}}{\partial f_{1,1}} + \frac{\partial L}{\partial y_{1,2}} \frac{\partial y_{1,2}}{\partial f_{1,1}} + \frac{\partial L}{\partial y_{2,1}} \frac{\partial y_{2,1}}{\partial f_{1,1}} + \frac{\partial L}{\partial y_{2,2}} \frac{\partial y_{2,2}}{\partial f_{1,1}}
+\end{equation}
+represents the gradient of the loss function with respect to the 1st row and 1st column
+of the filter. Taking the derivatives of the output with respect to the filter, the
+equation becomes,
+\begin{equation}
+    \frac{\partial L}{\partial f_{1,1}} = \frac{\partial L}{\partial y_{1,1}} x_{1,1} + \frac{\partial L}{\partial y_{1,2}} x_{1,2} + \frac{\partial L}{\partial y_{2,1}} x_{2,1} + \frac{\partial L}{\partial y_{2,2}} x_{2,2}.
+\end{equation}
+Repeating this process for all elements of the filter, we find that the gradient of the
+loss function with respect to the filter in the general case is given by,
+\begin{equation}
+    \frac{\partial L}{\partial \mathbf{F}_{i,j}} = \sum_{b=1}^{o} \mathbf{X}_{j}^{[b]} \ast \frac{\partial L}{\partial \mathbf{Y}_{i}^{[b]}}
+\end{equation}
+where $F_{i,j}$ is the $i$-th channel of the $j$-th filter, $X_{j}^{[b]}$ is the $j$-th
+channel of the $b$-th sample of the input, and $Y_{i}^{[b]}$ is the $i$-th channel of 
+the $b$-th sample of the output.
 \subsection{Activation Functions}
 Activation functions are used to introduce non-linearity into our neural network. We 
 used a total of four activation functions in our code, the ReLU, Sigmoid, Tanh, and 
@@ -318,20 +418,6 @@ problems. The softmax function is used on a vector of $n$ elements, and is defin
     f(x_i) = \frac{e^{x_i}}{\sum_{j=1}^{n} e^{x_j}}
 \end{equation}
 where $x_i$ is the $i$-th component of the vector and $f(x_i)$ is the probability of the $i$-th component of the vector.
-\subsection{Convolutional Layer}
-\subsubsection{Forward Propagation}
-The convolutional layer is a layer that takes a 3 dimensional input, where the first 
-two dimensions are the height and width of the input (usually pixel values of an 
-image), and the third dimension is the of channels of the input. The convolutional 
-layer is defined by the equation,
-\begin{equation}
-    \mathbf{Y}_{i}^{[b]} = \sum_{j=1}^n \mathbf{X}_{j}^{[b]} \ast  \mathbf{F}_{j,i} + \mathbf{B}_{i}
-\end{equation}
-where $\mathbf{Y}_{i}^{[b]}$ is the $i$-th channel of the $b$-th sample of the output , 
-$\mathbf{X}_{j}^{[b]}$ is the $j$-th channel of the $b$-th sample of the input, 
-$\mathbf{F}_{j,i}$ is the $j$-th channel of the $i$-th filter, $\mathbf{B}_{i}$ is the 
-$i$-th bias vector and $\ast$ is the convolution operator. The convolution operator 
-takes two 2-dimensional matrices and performs the following operation,
 \section{Loss Functions}
 \subsection{Mean Squared Error}
 The mean squared error is defined as,
