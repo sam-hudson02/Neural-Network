@@ -26,7 +26,7 @@ class Dense(Layer):
             raise ValueError('No input data')
 
         dw = np.dot(grad, self.input.T)
-        db = grad
+        db = grad.sum(axis=1) / grad.shape[1]
 
         self.w = np.subtract(self.w, alpha * dw)
         self.b = np.subtract(self.b, alpha * db)

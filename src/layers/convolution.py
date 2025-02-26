@@ -1,7 +1,7 @@
 from layers.layer import Layer
 from typing import Tuple
-from scipy.signal import correlate2d, convolve2d
 from numpy.random import rand
+from scipy.signal import convolve2d, correlate2d
 import numpy as np
 
 
@@ -15,75 +15,49 @@ class Convolution(Layer):
         self.kernel_height, self.kernel_width = kernel_size
         self.output_height = self.height - self.kernel_height + 1
         self.output_width = self.width - self.kernel_width + 1
-        self.kernels = np.asarray(rand(self.kernel_height,
-                                       self.kernel_width,
+        self.kernels = np.asarray(rand(self.filters,
                                        self.depth,
-                                       self.filters)) - 0.5
-        self.biases = np.asarray(rand(self.height - self.kernel_height + 1,
-                                      self.width - self.kernel_width + 1,
-                                      self.filters)) - 0.5
+                                       self.kernel_height,
+                                       self.kernel_width)) - 0.5
+        self.biases = np.asarray(rand(self.filters,
+                                      self.height - self.kernel_height + 1,
+                                      self.width - self.kernel_width + 1)) - 0.5
         self.input: np.ndarray | None = None
         self.output: np.ndarray | None = None
 
     def prop(self, input: np.ndarray) -> np.ndarray:
-        images = input.shape[3]
         self.input = input
-        self.output = np.zeros((self.filters * self.depth, self.height - 2,
-                                self.width - 2, images))
-        outputs = []
-        count = 0
-        for i in range(images):
-            image = input[:, :, :, i]
-            image_outputs = []
-            for j in range(self.filters):
-                image_out = np.zeros((self.output_height, self.output_width))
-                bias = self.biases[:, :, j]
-                for k in range(self.depth):
-                    count += 1
-                    channel = image[:, :, k]
-                    filter = self.kernels[:, :, k, j]
-                    correlation = correlate2d(channel, filter, "valid")
-                    image_out += correlation + bias
-                image_outputs.append(image_out)
-            image_outputs = np.asarray(image_outputs)
-            outputs.append(image_outputs)
-        self.output = np.asarray(outputs).T
-        return self.output
+        input_t = input.T
+        out = np.zeros((input_t.shape[0], self.filters, self.output_height,
+                        self.output_width))
+        for b in range(input_t.shape[0]):
+            for i in range(self.filters):
+                for j in range(self.depth):
+                    out[b, i] += correlate2d(input_t[b, j], self.kernels[i, j],
+                                             mode='valid')
+        return (out + self.biases).T
 
     def back_prop(self, grad: np.ndarray, alpha: float) -> np.ndarray:
         if self.input is None:
             raise ValueError('self.input is None')
 
-        n = self.input.shape[3]
+        dk = np.zeros(self.kernels.shape)
+        dx = np.zeros(self.input.T.shape)
 
-        dk = np.zeros((self.kernel_height, self.kernel_width,
-                      self.depth, self.filters))
+        input_t = self.input.T
+        grad = grad.T
+        for b in range(grad.shape[0]):
+            for i in range(self.filters):
+                for j in range(self.depth):
+                    dk[i, j] += correlate2d(input_t[b, j], grad[b, i],
+                                            mode='valid')
+                    dx[b, j] += convolve2d(grad[b, i], self.kernels[i, j],
+                                           mode='full')
 
-        dx = np.zeros((self.height, self.width, self.depth, n))
-        for i in range(n):
-            image = self.input[:, :, :, i]
-            filter_errors = []
-            for j in range(self.filters):
-                depth_errors = []
-                for k in range(self.depth):
-                    channel = image[:, :, k]
-                    grad_image = grad[:, :, j, i]
-                    error = correlate2d(channel, grad_image, "valid")
-                    depth_errors.append(error)
-                    kernel = self.kernels[:, :, k, j]
-                    dx[:, :, k, i] = convolve2d(grad_image, kernel, "full")
-                filter_errors.append(np.asarray(depth_errors))
-            filter_errors = np.asarray(filter_errors).T
-            dk += filter_errors
+        self.kernels -= alpha * dk
+        self.biases -= alpha * (grad.sum(axis=0) / grad.shape[0])
 
-        db = np.sum(grad, axis=3) / n
-
-        dk = dk / n
-
-        self.kernels = np.subtract(self.kernels, alpha * dk)
-        self.biases = np.subtract(self.biases, alpha * db)
-
-        return dx
+        return dx.T
 
     def save(self, path: str, i: int) -> dict:
         np.save(f'{path}/convolution_{i}_k', self.kernels)
