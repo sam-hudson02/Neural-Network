@@ -4,18 +4,24 @@ import numpy as np
 import os
 import pandas as pd
 import json
-import matplotlib
 from utils.utils import one_hot
 # matplotlib.use('module://matplotlib-backend-kitty')
+from collections import defaultdict
 
 
 def load_math_data(path: str, folders: list[str] | None = None):
     # check for folders in path
     if folders is None:
-        folders = os.listdir(path)
+        folders: list = os.listdir(path)
+        try:
+            folders.remove('meta.json')
+            folders.remove('count.json')
+        except ValueError:
+            pass
     meanings = load_math_meta()
     images = []
     labels = []
+    count = defaultdict(int)
     for folder in folders:
         print(f'opening folder {folder}')
         i = list(meanings.values()).index(folder)
@@ -29,6 +35,9 @@ def load_math_data(path: str, folders: list[str] | None = None):
             arr = np.array(img)
             images.append(arr)
             labels.append(i)
+            count[folder] += 1
+
+    save_count(count)
 
     x, y = process(images, labels)
     x_train = x[:-6000]
@@ -36,6 +45,11 @@ def load_math_data(path: str, folders: list[str] | None = None):
     x_test = x[-6000:]
     y_test = y[-6000:]
     return x_test, y_test, x_train, y_train, meanings
+
+
+def save_count(count: dict):
+    with open('./data/math/count.json', 'w') as f:
+        json.dump(count, f, indent=2)
 
 
 def load_math_meta() -> dict:
