@@ -3,11 +3,14 @@ from typing import Tuple
 from numpy.random import rand
 from scipy.signal import convolve2d, correlate2d
 import numpy as np
+from utils.optimizer import Optimizer, Optimizers, Adam, GradientDescent
 
 
 class Convolution(Layer):
     def __init__(self, input_shape: Tuple[int, int, int], filters: int,
-                 kernel_size: Tuple[int, int]):
+                 kernel_size: Tuple[int, int],
+                 optimizer: Optimizers = Optimizers.ADAM,
+                 alpha: float = 0.01):
         self.input_shape = input_shape
         self.height, self.width, self.depth = input_shape
         self.filters = filters
@@ -24,6 +27,14 @@ class Convolution(Layer):
                                       self.width - self.kernel_width + 1)) - 0.5
         self.input: np.ndarray | None = None
         self.output: np.ndarray | None = None
+        opt = None
+        if optimizer == Optimizers.ADAM:
+            opt = Adam()
+        elif optimizer == Optimizers.GRAD:
+            opt = GradientDescent(alpha)
+        if opt is None:
+            raise ValueError('invalid optimizer')
+        self.optimizer: Optimizer = opt
 
     def prop(self, input: np.ndarray) -> np.ndarray:
         self.input = input
@@ -54,10 +65,14 @@ class Convolution(Layer):
                     dx[b, j] += convolve2d(grad[b, i], self.kernels[i, j],
                                            mode='full')
 
-        self.kernels -= alpha * dk
-        self.biases -= alpha * (grad.sum(axis=0) / grad.shape[0])
+        db = grad.sum(axis=0) / grad.shape[0]
+        dk = dk / grad.shape[0]
+        u_dk, u_db = self.optimizer.update(dk, db)
 
-        return dx.T
+        self.kernels -= u_dk
+        self.biases -= u_db
+
+        return dx.T / grad.shape[0]
 
     def save(self, path: str, i: int) -> dict:
         np.save(f'{path}/convolution_{i}_k', self.kernels)

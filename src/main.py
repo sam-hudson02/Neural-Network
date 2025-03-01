@@ -3,6 +3,7 @@ from utils.alpha import exp_alpha, step_alpha
 from utils.data import load_cifar_10_data, load_sin, load_mnist_data, load_cifar_data
 from utils.math_data import load_math_data, load_math_meta
 import numpy as np
+from utils.optimizer import Optimizers
 from utils.utils import Activation, cce, cce_softmax_prime, mse, mse_prime, one_hot
 from models.classify import Classifier
 from layers.dense import Dense
@@ -127,30 +128,32 @@ def conv():
     print(x_train.shape)
     print(x_test.shape)
     x_train = x_train.T.reshape(x_train.shape[1], 1, 28, 28)
-    filters_1 = 5
-    filters_2 = 10
+    x_test = x_test.T.reshape(x_train.shape[1], 1, 28, 28)
+    filters_1 = 6
+    filters_2 = 12
+    opt = Optimizers.ADAM
     layers = [
-        Convolution((28, 28, 1), filters_1, (3, 3)),
+        Convolution((28, 28, 1), filters_1, (3, 3), opt),
         ActivationLayer(ReLU()),
-        Convolution((26, 26, filters_1), filters_2, (3, 3)),
+        Convolution((26, 26, filters_1), filters_2, (3, 3), opt),
         ActivationLayer(ReLU()),
         Reshape((24, 24, filters_2)),
-        Dense(24 * 24 * filters_2, 128),
+        Dense(24 * 24 * filters_2, 128, opt),
         ActivationLayer(ReLU()),
-        Dense(128, 10),
+        Dense(128, 10, opt),
     ]
     print(x_train.shape)
     network = Network(layers, softmax=True, loss=cce,
                       loss_prime=cce_softmax_prime, verbose=True)
 
     def alpha(i):
-        return 0.00001
+        return 0.01
 
     loss = network.train(x_train, y_train.T, epochs=4,
-                         alpha=alpha, batch_size=500)
+                         alpha=alpha, batch_size=50)
     plt.plot(loss)
     plt.show()
-    predictions = network.prop(x_test)
+    predictions = network.prop(x_test.T)
     accuracy = network.accuracy(predictions, y_test)
     print(f'Accuracy: {accuracy}')
     print(f'Predictions: {np.argmax(predictions, axis=0)}')
@@ -224,20 +227,21 @@ def mnist_classify():
     print(x_train.shape)
     print(x_test.shape)
     x_train = x_train.T
+    opt = Optimizers.ADAM
     layers = [
-        Dense(28 * 28, 128),
+        Dense(28 * 28, 128, opt),
         ActivationLayer(ReLU()),
-        Dense(128, 10),
+        Dense(128, 10, opt),
     ]
     print(x_train.shape)
     network = Network(layers, softmax=True, loss=cce,
                       loss_prime=cce_softmax_prime, verbose=True)
 
     def alpha(i):
-        return 0.00001
+        return 0.2
 
-    loss = network.train(x_train, y_train.T, epochs=4,
-                         alpha=alpha, batch_size=500)
+    loss = network.train(x_train, y_train.T, epochs=10,
+                         alpha=alpha, batch_size=64)
     plt.plot(loss)
     plt.show()
     predictions = network.prop(x_test)
@@ -248,7 +252,7 @@ def mnist_classify():
 
 
 def main():
-    math_conv()
+    mnist_classify()
 
 
 if __name__ == '__main__':

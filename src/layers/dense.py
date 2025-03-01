@@ -1,16 +1,26 @@
 from layers.layer import Layer
 from numpy.random import rand
 import numpy as np
+from utils.optimizer import Optimizer, Optimizers, Adam, GradientDescent
 
 
 class Dense(Layer):
-    def __init__(self, input_size: int, output_size: int):
+    def __init__(self, input_size: int, output_size: int,
+                 optimizer: Optimizers = Optimizers.ADAM, alpha: float = 0.01):
         self.input_size = input_size
         self.output_size = output_size
         weights = rand(output_size, input_size) - 0.5
         self.w = np.asarray(weights)
         self.b = np.asarray(rand(output_size, 1)) - 0.5
         self.input: np.ndarray | None = None
+        opt = None
+        if optimizer == Optimizers.ADAM:
+            opt = Adam()
+        elif optimizer == Optimizers.GRAD:
+            opt = GradientDescent(alpha)
+        if opt is None:
+            raise ValueError('invalid optimizer')
+        self.optimizer: Optimizer = opt
 
     def prop(self, input: np.ndarray) -> np.ndarray:
         self.input = input
@@ -25,11 +35,13 @@ class Dense(Layer):
         if self.input is None:
             raise ValueError('No input data')
 
-        dw = np.dot(grad, self.input.T)
+        dw = np.dot(grad, self.input.T) / grad.shape[1]
         db = grad.sum(axis=1) / grad.shape[1]
 
-        self.w = np.subtract(self.w, alpha * dw)
-        self.b = np.subtract(self.b, alpha * db)
+        u_dw, u_db = self.optimizer.update(dw, db)
+
+        self.w = np.subtract(self.w, u_dw)
+        self.b = np.subtract(self.b, u_db)
 
         dx = np.dot(self.w.T, grad)
         return dx
