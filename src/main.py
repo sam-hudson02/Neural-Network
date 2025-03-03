@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from utils.alpha import exp_alpha, step_alpha
 from utils.data import load_cifar_10_data, load_sin, load_mnist_data, load_cifar_data
+from utils.hasy import generate_index, load_images
 from utils.math_data import load_math_data, load_math_meta
 import numpy as np
 from utils.optimizer import Optimizers
@@ -27,10 +28,11 @@ def math_classify():
     x_train = x_train.reshape(x_train.shape[0], 28 * 28)
     x_test = x_test.reshape(x_test.shape[0], 28 * 28)
     print(x_train.shape)
+    opt = Optimizers.ADAM
     layers = [
-        Dense(28 * 28, 128),
-        ActivationLayer(ReLU()),
-        Dense(128, len(meanings.keys())),
+        Dense(28 * 28, 128, opt),
+        ActivationLayer(Tanh()),
+        Dense(128, len(meanings.keys()), opt),
     ]
     network = Network(layers, softmax=True, loss=cce,
                       loss_prime=cce_softmax_prime, verbose=True)
@@ -41,7 +43,7 @@ def math_classify():
         else:
             return 0.000001
 
-    network.train(x_train, y_train, epochs=300, alpha=alpha, batch_size=500)
+    network.train(x_train, y_train, epochs=10, alpha=alpha, batch_size=500)
     predictions = network.prop(x_test.T)
     accuracy = network.accuracy(predictions, y_test.T)
     network.save('models/math_2')
@@ -60,16 +62,23 @@ def math_classify():
 
 def from_save():
     x_test, y_test, x_train, y_train, meanings = load_math_data(
-        'data/test_math')
+        'data/math')
     x_test = x_test.reshape(x_test.shape[0], 28 * 28)
+    x_train = x_train.reshape(x_train.shape[0], 28 * 28)
+    opt = Optimizers.ADAM
     layers = [
-        Dense(28 * 28, 128),
+        Dense(28 * 28, 128, opt),
         ActivationLayer(Tanh()),
-        Dense(128, len(meanings.keys())),
+        Dense(128, len(meanings.keys()), opt),
     ]
-    network = Network(layers, softmax=True, loss=mse,
-                      loss_prime=mse_prime, verbose=True)
+    network = Network(layers, softmax=True, loss=cce,
+                      loss_prime=cce_softmax_prime, verbose=True)
     network.open('models/math')
+
+    def alpha(i):
+        return 0.000001
+
+    network.train(x_train, y_train, epochs=10, alpha=alpha, batch_size=500)
     predictions = network.prop(x_test.T)
     accuracy = network.accuracy(predictions, y_test.T)
     print(f'Accuracy: {accuracy}')
@@ -92,17 +101,18 @@ def math_conv():
     x_test = x_test.reshape(x_test.shape[0], 1, 28, 28)
     cats = len(meanings.keys())
 
+    opt = Optimizers.ADAM
     filters_1 = 5
     filters_2 = 10
     layers = [
-        Convolution((28, 28, 1), filters_1, (3, 3)),
+        Convolution((28, 28, 1), filters_1, (3, 3), opt),
         ActivationLayer(ReLU()),
-        Convolution((26, 26, filters_1), filters_2, (3, 3)),
+        Convolution((26, 26, filters_1), filters_2, (3, 3), opt),
         ActivationLayer(ReLU()),
         Reshape((24, 24, filters_2)),
-        Dense(24 * 24 * filters_2, 128),
+        Dense(24 * 24 * filters_2, 128, opt),
         ActivationLayer(ReLU()),
-        Dense(128, cats),
+        Dense(128, cats, opt),
     ]
     print(x_train.shape)
     network = Network(layers, softmax=True, loss=cce,
@@ -123,14 +133,56 @@ def math_conv():
     print(f'Actual: {np.argmax(y_test, axis=0)}')
 
 
+def hasy_conv():
+    meanings = generate_index('data/hasy/hasy-data-labels.csv')
+    x, y = load_images('data/hasy/hasy-data-labels.csv', meanings)
+    x = x.reshape(x.shape[0], 1, 28, 28)
+    x_train = x[:120000]
+    y_train = y[:120000]
+    x_test = x[120000:]
+    y_test = y[120000:]
+    cats = len(meanings.keys())
+
+    opt = Optimizers.ADAM
+    filters_1 = 4
+    filters_2 = 8
+    layers = [
+        Convolution((28, 28, 1), filters_1, (3, 3), opt),
+        ActivationLayer(ReLU()),
+        Convolution((26, 26, filters_1), filters_2, (3, 3), opt),
+        ActivationLayer(ReLU()),
+        Reshape((24, 24, filters_2)),
+        Dense(24 * 24 * filters_2, 1024, opt),
+        ActivationLayer(Tanh()),
+        Dense(1024, cats, opt),
+    ]
+    print(x_train.shape)
+    network = Network(layers, softmax=True, loss=cce,
+                      loss_prime=cce_softmax_prime, verbose=True)
+
+    def alpha(i):
+        return 0.000005
+
+    loss = network.train(x_train, y_train, epochs=10,
+                         alpha=alpha, batch_size=2048)
+    network.save('models/hasy_conv')
+    plt.plot(loss)
+    plt.show()
+    predictions = network.prop(x_test)
+    accuracy = network.accuracy(predictions, y_test)
+    print(f'Accuracy: {accuracy}')
+    print(f'Predictions: {np.argmax(predictions, axis=0)}')
+    print(f'Actual: {np.argmax(y_test, axis=0)}')
+
+
 def conv():
     x_test, y_test, x_train, y_train = load_mnist_data()
     print(x_train.shape)
     print(x_test.shape)
     x_train = x_train.T.reshape(x_train.shape[1], 1, 28, 28)
-    x_test = x_test.T.reshape(x_train.shape[1], 1, 28, 28)
-    filters_1 = 6
-    filters_2 = 12
+    x_test = x_test.T.reshape(x_test.shape[1], 1, 28, 28)
+    filters_1 = 4
+    filters_2 = 8
     opt = Optimizers.ADAM
     layers = [
         Convolution((28, 28, 1), filters_1, (3, 3), opt),
@@ -149,11 +201,53 @@ def conv():
     def alpha(i):
         return 0.01
 
-    loss = network.train(x_train, y_train.T, epochs=4,
-                         alpha=alpha, batch_size=50)
+    loss = network.train(x_train, y_train.T, epochs=10,
+                         alpha=alpha, batch_size=32)
     plt.plot(loss)
     plt.show()
     predictions = network.prop(x_test.T)
+    accuracy = network.accuracy(predictions, y_test)
+    print(f'Accuracy: {accuracy}')
+    print(f'Predictions: {np.argmax(predictions, axis=0)}')
+    print(f'Actual: {np.argmax(y_test, axis=0)}')
+
+
+def hasy_classify():
+    meanings = generate_index('data/hasy/hasy-data-labels.csv')
+    x, y = load_images('data/hasy/hasy-data-labels.csv', meanings)
+    x = x.reshape(x.shape[0], 28 * 28)
+    x_train = x[:120000]
+    y_train = y[:120000]
+    x_test = x[120000:]
+    y_test = y[120000:]
+    cats = len(meanings.keys())
+    opt = Optimizers.ADAM
+    layers = [
+        Dense(28 * 28, 1024, opt),
+        ActivationLayer(ReLU()),
+        Dense(1024, 512, opt),
+        ActivationLayer(ReLU()),
+        Dense(512, cats, opt),
+    ]
+    print(x_train.shape)
+    network = Network(layers, softmax=True, loss=cce,
+                      loss_prime=cce_softmax_prime, verbose=True)
+
+    def alpha(i):
+        return 0.2
+
+    predictions = network.prop(x_test.T)
+    print(predictions.shape)
+    accuracy = network.accuracy(predictions, y_test.T)
+    print(f'Accuracy: {accuracy}')
+    print(f'Predictions: {np.argmax(predictions, axis=0)}')
+    print(f'Actual: {np.argmax(y_test.T, axis=0)}')
+
+    loss = network.train(x_train, y_train, epochs=100,
+                         alpha=alpha, batch_size=2048)
+    plt.plot(loss)
+    plt.show()
+    predictions = network.prop(x_test)
     accuracy = network.accuracy(predictions, y_test)
     print(f'Accuracy: {accuracy}')
     print(f'Predictions: {np.argmax(predictions, axis=0)}')
@@ -169,8 +263,8 @@ def reddit_classify():
         ActivationLayer(Tanh()),
         Dense(128, 2),
     ]
-    network = Network(layers, softmax=True, loss=mse,
-                      loss_prime=mse_prime, verbose=True)
+    network = Network(layers, softmax=True, loss=cce,
+                      loss_prime=cce_softmax_prime, verbose=True)
 
     def alpha(i):
         if i < 100:
@@ -178,7 +272,7 @@ def reddit_classify():
         else:
             return 0.3
 
-    network.train(x_train, y_train, epochs=300, alpha=alpha, batch_size=200)
+    network.train(x_train, y_train, epochs=5, alpha=alpha, batch_size=200)
     predictions = network.prop(x_test.T)
     accuracy = network.accuracy(predictions, y_test.T)
     network.save('models/reddit')
@@ -240,7 +334,7 @@ def mnist_classify():
     def alpha(i):
         return 0.2
 
-    loss = network.train(x_train, y_train.T, epochs=10,
+    loss = network.train(x_train, y_train.T, epochs=100,
                          alpha=alpha, batch_size=64)
     plt.plot(loss)
     plt.show()
@@ -252,7 +346,7 @@ def mnist_classify():
 
 
 def main():
-    mnist_classify()
+    hasy_conv()
 
 
 if __name__ == '__main__':
