@@ -30,8 +30,10 @@ def mse_prime(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
     return 2 * np.subtract(y_pred, y_true) / y_true.size
 
 
-def cce(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
-    return -np.sum(y_true * np.log(y_pred))
+def cce(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    eps = 1e-15
+    x = y_true * np.log(y_pred + eps)
+    return float(np.sum(x)) / -y_true.shape[1]
 
 
 def cce_softmax_prime(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:

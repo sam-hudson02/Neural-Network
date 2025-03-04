@@ -26,7 +26,7 @@ def load_mnist_data() -> Tuple[np.ndarray, np.ndarray, np.ndarray,
     rows = data.shape[0]
 
     # take the first 1000 cols as the test data
-    data_test = data[:, 0:1000]
+    data_test = data[:, 0:4000]
     # gets the first rows as the labels
     Y_test = data_test[0]
     # gets the rest of the data as the input
@@ -35,7 +35,7 @@ def load_mnist_data() -> Tuple[np.ndarray, np.ndarray, np.ndarray,
     X_test = X_test / 255.
 
     # take the rest of the cols as the training data
-    data_train = data[:, 1000:]
+    data_train = data[:, 4000:]
     # gets the first rows as the labels
     Y_train = data_train[0]
     # gets the rest of the data as the input

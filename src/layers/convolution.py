@@ -72,7 +72,7 @@ class Convolution(Layer):
         self.kernels -= u_dk
         self.biases -= u_db
 
-        return dx.T / grad.shape[0]
+        return dx.T
 
     def save(self, path: str, i: int) -> dict:
         np.save(f'{path}/convolution_{i}_k', self.kernels)

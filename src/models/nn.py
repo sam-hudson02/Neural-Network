@@ -1,26 +1,30 @@
 from time import time
 import numpy as np
 from layers.layer import Layer
-from utils.utils import eta_fancy, stable_softmax, pad
+from utils.utils import stable_softmax, pad
 from typing import Callable
-import sys
 import os
 import json
+from alive_progress import alive_bar
 
 
 class Network:
     def __init__(self, layers: list[Layer], softmax: bool,
-                 loss: Callable[[np.ndarray, np.ndarray], np.ndarray],
+                 loss: Callable[[np.ndarray, np.ndarray], float],
                  loss_prime: Callable[[np.ndarray, np.ndarray], np.ndarray],
                  verbose: bool = False):
         self.layers: list[Layer] = layers
         self.layers_reverse: list[Layer] = layers[::-1]
         self.softmax: bool = softmax
-        self.loss: Callable[[np.ndarray, np.ndarray], np.ndarray] = loss
+        self.loss: Callable[[np.ndarray, np.ndarray], float] = loss
         self.loss_prime: Callable[[np.ndarray,
                                    np.ndarray], np.ndarray] = loss_prime
         self.verbose: bool = verbose
         self.last_update = time()
+        self.loss_history: list[list[float]] = []
+        self.accuracy_history: list[list[float]] = []
+        self.validation_loss_history: list[float] = []
+        self.validation_accuracy_history: list[float] = []
 
     def prop(self, x: np.ndarray) -> np.ndarray:
         for layer in self.layers:
@@ -37,32 +41,67 @@ class Network:
             dy = layer.back_prop(dy, alpha)
         return a
 
-    def train(self, x: np.ndarray, y: np.ndarray, epochs: int = 500,
+    def train(self, x: np.ndarray, y: np.ndarray,
+              validation: tuple[np.ndarray, np.ndarray] | None = None,
+              epochs: int = 500,
               batch_size: int = 4000,
-              alpha: Callable[[int], float] = lambda _: 0.01) -> list[float]:
+              alpha: Callable[[int], float] = lambda _: 0.01) -> list[list[float]]:
         n = x.shape[0]
         batches = n // batch_size
         a = 0
-        start_time = time()
-        loss_history = []
         for i in range(epochs):
-            for j in range(batches):
-                batch_start = time()
-                x_act = x[j * batch_size:(j + 1) * batch_size].T
-                y_act = y[j * batch_size:(j + 1) * batch_size].T
-                a = self.back_prop(x_act, y_act, alpha(i))
-                batch_end = time()
-                if self.verbose:
-                    ct = time()
-                    if ct - self.last_update > 1:
-                        eta = (batch_end - batch_start) * \
-                            (batches * (epochs - i) - j)
-                        eta = eta_fancy(eta)
-                        elaped_time = round(time() - start_time, 2)
-                        sys.stdout.write(f'\rEpoch: {i}, Accuracy: {self.accuracy(
-                            a, y_act)}, Elapsed time: {elaped_time}, ETA: {eta}')
-            loss_history.append(self.loss(y_act, a))
-        return loss_history
+            with alive_bar(batches, length=13, spinner=None,
+                           receipt_text=True) as bar:
+                bar.title = f'Epoch {i+1}/{epochs}'
+                loss_epoch = []
+                acc_epoch = []
+                acc_tot = 0
+                loss_tot = 0
+                for j in range(batches):
+                    x_act = x[j * batch_size:(j + 1) * batch_size].T
+                    y_act = y[j * batch_size:(j + 1) * batch_size].T
+                    a = self.back_prop(x_act, y_act, alpha(i))
+                    loss = self.loss(y_act, a)
+                    acc = self.accuracy(a, y_act)
+                    acc_tot += acc
+                    loss_tot += loss
+                    loss_str = self.str_loss(loss_tot/(j+1))
+                    acc_str = self.str_acc(acc_tot/(j+1))
+                    loss_epoch.append((self.loss(y_act, a)))
+                    acc_epoch.append(self.accuracy(a, y_act))
+                    if self.verbose:
+                        bar.text(f'{loss_str} {acc_str}')
+                        bar()
+
+                self.loss_history.append(loss_epoch)
+                self.accuracy_history.append(acc_epoch)
+
+                if validation is not None:
+                    v_loss, v_acc = self.validate(validation)
+                    self.validation_loss_history.append(v_loss)
+                    self.validation_accuracy_history.append(v_acc)
+                    bar.text(f'{self.str_loss(v_loss)} {self.str_acc(v_acc)}')
+            x, y = self.shuffle_data(x, y)
+        return self.loss_history
+
+    def average_loss(self) -> list[float]:
+        return [float(np.mean(x)) for x in self.loss_history]
+
+    def average_accuracy(self) -> list[float]:
+        return [float(np.mean(x)) for x in self.accuracy_history]
+
+    def validate(self,
+                 val: tuple[np.ndarray, np.ndarray]) -> tuple[float, float]:
+        x, y = val
+        a = self.prop(x.T)
+        loss = self.loss(y.T, a)
+        acc = self.accuracy(a, y.T)
+        return loss, acc
+
+    def shuffle_data(self, x: np.ndarray,
+                     y: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        p = np.random.permutation(x.shape[0])
+        return x[p], y[p]
 
     def save(self, path: str) -> None:
         arch = {}
@@ -81,7 +120,13 @@ class Network:
         for i, info in arch.items():
             self.layers[int(i)].open(path, info)
 
-    def accuracy(self, a_2: np.ndarray, y: np.ndarray) -> str:
+    def accuracy(self, a_2: np.ndarray, y: np.ndarray) -> float:
         predictions = np.argmax(a_2, axis=0)
         correct = np.sum(predictions == np.argmax(y, axis=0))
-        return pad(round(float(correct / y.shape[1]), 4), 5)
+        return correct / y.shape[1]
+
+    def str_acc(self, acc: float) -> str:
+        return f'acc: {pad(round(acc, 4), 5)}'
+
+    def str_loss(self, loss: float) -> str:
+        return f'loss: {pad(round(loss, 4), 5)}'

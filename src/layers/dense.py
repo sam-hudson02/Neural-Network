@@ -37,6 +37,7 @@ class Dense(Layer):
 
         dw = np.dot(grad, self.input.T) / grad.shape[1]
         db = grad.sum(axis=1) / grad.shape[1]
+        db = db.reshape(db.shape[0], 1)
 
         u_dw, u_db = self.optimizer.update(dw, db)
 
