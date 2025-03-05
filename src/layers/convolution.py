@@ -76,7 +76,7 @@ class Convolution(Layer):
 
     def save(self, path: str, i: int) -> dict:
         np.save(f'{path}/convolution_{i}_k', self.kernels)
-        np.save(f'{path}_{i}_b', self.biases)
+        np.save(f'{path}/convolution_{i}_b', self.biases)
         return {
             'type': 'Convolution',
             'input_shape': self.input_shape,

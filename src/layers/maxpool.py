@@ -29,3 +29,10 @@ class MaxPool(Layer):
             raise ValueError('self.x.grad is None')
         out = self.x.grad.detach().numpy().T
         return out
+
+    def save(self, path: str, i: int) -> dict:
+        return {
+            'type': 'MaxPool',
+            'pool_size': self.pool_size,
+            'stride': self.stride
+        }
