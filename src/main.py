@@ -34,7 +34,7 @@ def math_classify():
     opt = Optimizers.ADAM
     layers = [
         Dense(28 * 28, 128, opt),
-        ActivationLayer(Tanh()),
+        ActivationLayer(ReLU()),
         Dense(128, len(meanings.keys()), opt),
     ]
     network = Network(layers, softmax=True, loss=cce,
@@ -105,8 +105,8 @@ def math_conv():
     cats = len(meanings.keys())
 
     opt = Optimizers.ADAM
-    filters_1 = 5
-    filters_2 = 10
+    filters_1 = 6
+    filters_2 = 12
     layers = [
         Convolution((28, 28, 1), filters_1, (3, 3), opt),
         ActivationLayer(ReLU()),
@@ -139,12 +139,15 @@ def math_conv():
 
     val = (x_test, y_test)
     loss = network.train(x_train, y_train, epochs=4,
-                         alpha=alpha, batch_size=32, validation=val)
-    network.save('models/math_conv_32')
-    plt.plot(loss)
-    plt.show()
+                         alpha=alpha, batch_size=512, validation=val)
+    network.save('models/math_conv_500')
+    loss = network.average_loss()
+    acc = network.average_accuracy()
+    val_loss = network.validation_loss_history
+    val_acc = network.validation_accuracy_history
+    plot_net(loss, acc, val_loss, val_acc)
     predictions = network.prop(x_test.T)
-    accuracy = network.accuracy(predictions, y_test)
+    accuracy = network.accuracy(predictions, y_test.T)
     print(f'Accuracy: {accuracy}')
     print(f'Predictions: {np.argmax(predictions, axis=0)}')
     print(f'Actual: {np.argmax(y_test, axis=0)}')
