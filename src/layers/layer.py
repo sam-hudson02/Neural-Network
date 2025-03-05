@@ -13,7 +13,7 @@ class Layer:
         raise (ValueError('method back_prop not implemented'))
 
     def save(self, path: str, i: int) -> dict:
-        raise (ValueError('method save not implemented'))
+        pass
 
     def open(self, path: str, info: dict) -> None:
         print('Warning: method open not implemented in',

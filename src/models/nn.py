@@ -105,6 +105,10 @@ class Network:
 
     def save(self, path: str) -> None:
         arch = {}
+        history = {'loss': self.loss_history,
+                   'accuracy': self.accuracy_history,
+                   'validation_loss': self.validation_loss_history,
+                   'validation_accuracy': self.validation_accuracy_history}
         if not os.path.exists(path):
             os.makedirs(path)
         for i, layer in enumerate(self.layers):
@@ -113,8 +117,16 @@ class Network:
             os.makedirs(path)
         with open(f'{path}/arch.json', 'w') as f:
             json.dump(arch, f)
+        with open(f'{path}/history.json', 'w') as f:
+            json.dump(history, f)
 
     def open(self, path: str) -> None:
+        with open(f'{path}/history.json', 'r') as f:
+            history = json.load(f)
+            self.loss_history = history['loss']
+            self.accuracy_history = history['accuracy']
+            self.validation_loss_history = history['validation_loss']
+            self.validation_accuracy_history = history['validation_accuracy']
         with open(f'{path}/arch.json', 'r') as f:
             arch = json.load(f)
         for i, info in arch.items():

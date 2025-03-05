@@ -110,13 +110,26 @@ def math_conv():
     layers = [
         Convolution((28, 28, 1), filters_1, (3, 3), opt),
         ActivationLayer(ReLU()),
-        Convolution((26, 26, filters_1), filters_2, (3, 3), opt),
+        MaxPool(2, 2),
+        Convolution((13, 13, filters_1), filters_2, (3, 3), opt),
         ActivationLayer(ReLU()),
-        Reshape((24, 24, filters_2)),
-        Dense(24 * 24 * filters_2, 128, opt),
+        MaxPool(2, 2),
+        Convolution((5, 5, filters_2), filters_2, (3, 3), opt),
+        Reshape((3, 3, filters_2)),
+        Dense(3 * 3 * filters_2, 128, opt),
         ActivationLayer(ReLU()),
         Dense(128, cats, opt),
     ]
+    # layers = [
+    #     Convolution((28, 28, 1), filters_1, (3, 3), opt),
+    #     ActivationLayer(ReLU()),
+    #     Convolution((26, 26, filters_1), filters_2, (3, 3), opt),
+    #     ActivationLayer(ReLU()),
+    #     Reshape((24, 24, filters_2)),
+    #     Dense(24 * 24 * filters_2, 128, opt),
+    #     ActivationLayer(ReLU()),
+    #     Dense(128, cats, opt),
+    # ]
     print(x_train.shape)
     network = Network(layers, softmax=True, loss=cce,
                       loss_prime=cce_softmax_prime, verbose=True)
@@ -124,12 +137,13 @@ def math_conv():
     def alpha(i):
         return 0.000005
 
+    val = (x_test, y_test)
     loss = network.train(x_train, y_train, epochs=4,
-                         alpha=alpha, batch_size=500)
-    network.save('models/math_conv')
+                         alpha=alpha, batch_size=32, validation=val)
+    network.save('models/math_conv_32')
     plt.plot(loss)
     plt.show()
-    predictions = network.prop(x_test)
+    predictions = network.prop(x_test.T)
     accuracy = network.accuracy(predictions, y_test)
     print(f'Accuracy: {accuracy}')
     print(f'Predictions: {np.argmax(predictions, axis=0)}')
@@ -368,7 +382,7 @@ def mnist_classify():
 
 
 def main():
-    conv()
+    math_conv()
 
 
 if __name__ == '__main__':
