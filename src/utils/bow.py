@@ -1,0 +1,222 @@
+import json
+import nltk
+from collections import defaultdict
+from layers.layer import Layer
+from plots.plot_net import plot_net
+from utils.optimizer import Optimizers
+from utils.utils import cce, cce_softmax_prime, one_hot
+from layers.dense import Dense
+from models.nn import Network
+import numpy as np
+nltk.download('punkt_tab')
+
+classes = [
+    "History", "Fantasy", "Drama", "Mystery", "Science fiction", "Romance",
+    "Fiction, coming of age", "Fiction, horror", "Fiction, action & adventure",
+]
+
+
+def open_book_data(path: str):
+    with open(path) as f:
+        return json.load(f)
+
+
+def save_json(data, path):
+    with open(path, 'w') as f:
+        json.dump(data, f, indent=4)
+
+
+def create_classes():
+    max = 0
+    i_max = 0
+    path = './data/books/filtered_books.json'
+    book_json = open_book_data(path)
+    new_book_json = []
+    str_desc = []
+    for i, book in enumerate(book_json):
+        subjects = book['subjects']
+        for subject in subjects:
+            for c in classes:
+                if c in subject:
+                    book['class'] = classes.index(c)
+        desc = book['description']
+        if type(desc) == str:
+            str_desc.append(i)
+            desc = {'type': '/type/text', 'value': desc}
+        book['description'] = desc
+        text = desc['value']
+        words = text.split()
+        if len(words) <= 500:
+            new_book_json.append(book)
+            if len(words) > max:
+                max = len(words)
+                i_max = i
+
+    print(max)
+    print(i_max)
+    max_desc = book_json[i_max]['description']['type']
+    print(max_desc)
+    meta = {}
+    print(i_max in str_desc)
+    title = book_json[i_max]['title']
+    print(title)
+    print(len(book_json))
+    print(len(new_book_json))
+
+    for i, c in enumerate(classes):
+        meta[i] = c
+
+    save_json(new_book_json, './data/books/books.json')
+    save_json(meta, './data/books/meta.json')
+
+
+def tokenize():
+    path = './data/books/books.json'
+    book_json = open_book_data(path)
+    word_count = defaultdict(int)
+    word_in_doc = defaultdict(set)
+    new_book_json = []
+    total = 0
+    for book in book_json:
+        idf_count = defaultdict(int)
+        text = book['description']['value'].lower()
+        sentences = nltk.sent_tokenize(text)
+        toks = []
+        for sent in sentences:
+            words = nltk.word_tokenize(sent)
+            work_id = book['work_id']
+            for word in words:
+                word_count[word] += 1
+                idf_count[word] += 1
+                total += 1
+                word_in_doc[word].add(work_id)
+            toks.append(words)
+        book['count'] = idf_count
+        book['tokens'] = toks
+        # delete author, description, subjects
+        del book['authors']
+        del book['description']
+        del book['subjects']
+        new_book_json.append(book)
+    new_book_json = tf_idf(new_book_json, word_in_doc)
+    save_json(new_book_json, './data/books/books.json')
+    vocab = list(word_count.keys())
+    save_json(vocab, './data/books/vocab.json')
+
+
+def tf_idf(book_json: list, word_in_doc: dict):
+    total_docs = len(book_json)
+    new_book_json = []
+    for book in book_json:
+        tfidf = {}
+        unique_tokens = list(book['count'].keys())
+        len_tokens = 0
+        for sent in book['tokens']:
+            len_tokens += len(sent)
+        for token in unique_tokens:
+            t_in_doc = book['count'][token]
+            tf = t_in_doc / len_tokens
+            doc_containing_d = len(word_in_doc[token])
+            idf = np.log(total_docs / doc_containing_d)
+            tfidf[token] = tf * idf
+        book['tf-idf'] = tfidf
+        new_book_json.append(book)
+    return new_book_json
+
+
+def make_skipgrams():
+    path = './data/books/books.json'
+    book_json = open_book_data(path)
+    total_bigrams = []
+    for book in book_json:
+        toks = book['tokens']
+        for sent in toks:
+            bigrams = list(nltk.bigrams(sent))
+            total_bigrams += bigrams
+    return total_bigrams
+
+
+def check():
+    book_json = open_book_data('./data/books/books.json')
+    print(book_json[0])
+    data = open_book_data('./data/books/data.json')
+    print(data['x'][:10])
+    print(data['y'][:10])
+    print(len(data['x']))
+    print(len(data['y']))
+
+
+def make_x_y():
+    print('creating skipgrams')
+    skipgrams = list(set(make_skipgrams()))
+    print(skipgrams[:1000])
+    print(f'made {len(skipgrams)} skipgrams')
+    print('loading vocab')
+    vocab = open_book_data('./data/books/vocab.json')
+    word_ind = {word: i for i, word in enumerate(vocab)}
+    print('creating x list')
+    x_list = [word_ind[skipgram[0]] for skipgram in skipgrams]
+    print('creating y list')
+    y_list = [word_ind[skipgram[1]] for skipgram in skipgrams]
+    data = {'x': x_list, 'y': y_list}
+    print('saving data')
+    save_json(data, './data/books/data.json')
+    return x_list, y_list
+
+
+def word2vec():
+    data = open_book_data('./data/books/data.json')
+    x_list = data['x']
+    y_list = data['y']
+    x = np.array(x_list).reshape(-1, 1)
+    y = np.array(y_list).reshape(-1, 1)
+
+    x_train = x[:-2000]
+    y_train = y[:-2000]
+    x_test = x[-2000:]
+    y_test = y[-2000:]
+    embed_size = 128
+    vec_size = 1
+    opt = Optimizers.ADAM
+    layers: list[Layer] = [
+        Dense(1, embed_size, opt),
+        Dense(embed_size, vec_size, opt),
+    ]
+
+    network = Network(layers, softmax=True, loss=cce,
+                      loss_prime=cce_softmax_prime, verbose=True)
+
+    val = (x_test, y_test)
+    network.train(x_train, y_train, epochs=10, validation=val, batch_size=32)
+    network.save('./models/word2vec')
+    loss = network.loss_history
+    print(loss[0][:20])
+    loss = network.average_loss()
+    acc = network.average_accuracy()
+    val_loss = network.validation_loss_history
+    val_acc = network.validation_accuracy_history
+    plot_net(loss, acc, val_loss, val_acc)
+
+
+def open_word2vec():
+    embed_size = 128
+    vec_size = 1
+    opt = Optimizers.ADAM
+    layers: list[Layer] = [
+        Dense(1, embed_size, opt),
+        Dense(embed_size, vec_size, opt),
+    ]
+
+    network = Network(layers, softmax=True, loss=cce,
+                      loss_prime=cce_softmax_prime, verbose=True)
+    network.open('./models/word2vec')
+    loss = network.average_loss()
+    acc = network.average_accuracy()
+    val_loss = network.validation_loss_history
+    val_acc = network.validation_accuracy_history
+    plot_net(loss, acc, val_loss, val_acc)
+
+
+if __name__ == '__main__':
+    make_x_y()
+    check()
