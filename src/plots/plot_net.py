@@ -18,3 +18,4 @@ def plot_net(loss: list[float], acc: list[float], val_loss: list[float],
     ax2.set_ylabel('Loss')
     ax2.legend()
     plt.show()
+    plt.savefig(f'./plots/{title}.png')

@@ -1,12 +1,20 @@
 import json
 import nltk
 from collections import defaultdict
+from utils.activation import ReLU, Sigmoid, Tanh
+from layers.activation import Activation as ActivationLayer
+from layers.convolution import Convolution
+from layers.maxpool import MaxPool
 from layers.layer import Layer
+from layers.reshape import Reshape
 from plots.plot_net import plot_net
 from utils.optimizer import Optimizers
-from utils.utils import cce, cce_softmax_prime, one_hot
+from utils.utils import cce, cce_softmax_prime
 from layers.dense import Dense
 from models.nn import Network
+from gensim.models.doc2vec import Doc2Vec, TaggedDocument
+from sentence_transformers import SentenceTransformer
+from alive_progress import alive_bar
 import numpy as np
 nltk.download('punkt_tab')
 
@@ -93,10 +101,6 @@ def tokenize():
             toks.append(words)
         book['count'] = idf_count
         book['tokens'] = toks
-        # delete author, description, subjects
-        del book['authors']
-        del book['description']
-        del book['subjects']
         new_book_json.append(book)
     new_book_json = tf_idf(new_book_json, word_in_doc)
     save_json(new_book_json, './data/books/books.json')
@@ -166,20 +170,21 @@ def make_x_y():
 
 def word2vec():
     data = open_book_data('./data/books/data.json')
-    x_list = data['x']
-    y_list = data['y']
-    x = np.array(x_list).reshape(-1, 1)
-    y = np.array(y_list).reshape(-1, 1)
+    vocab = open_book_data('./data/books/vocab.json')
+    x_list = data['x'][0:32000]
+    y_list = data['y'][0:32000]
+    x = one_hot(x_list, vocab)
+    y = one_hot(y_list, vocab)
 
     x_train = x[:-2000]
     y_train = y[:-2000]
     x_test = x[-2000:]
     y_test = y[-2000:]
     embed_size = 128
-    vec_size = 1
+    vec_size = x.shape[1]
     opt = Optimizers.ADAM
     layers: list[Layer] = [
-        Dense(1, embed_size, opt),
+        Dense(vec_size, embed_size, opt),
         Dense(embed_size, vec_size, opt),
     ]
 
@@ -187,7 +192,7 @@ def word2vec():
                       loss_prime=cce_softmax_prime, verbose=True)
 
     val = (x_test, y_test)
-    network.train(x_train, y_train, epochs=10, validation=val, batch_size=32)
+    network.train(x_train, y_train, epochs=10, validation=val, batch_size=128)
     network.save('./models/word2vec')
     loss = network.loss_history
     print(loss[0][:20])
@@ -217,6 +222,115 @@ def open_word2vec():
     plot_net(loss, acc, val_loss, val_acc)
 
 
+def doc2vec():
+    books = open_book_data('./data/books/books.json')
+    data = []
+    for book in books:
+        total = []
+        for sent in book['tokens']:
+            total += sent
+        data.append(total)
+    documents = [TaggedDocument(doc, [i]) for i, doc in enumerate(data)]
+    model = Doc2Vec(documents, vector_size=256,
+                    window=4, min_count=1, workers=6, epochs=30)
+    model.save('./models/doc2vec')
+    with alive_bar(len(data)) as bar:
+        for i, doc in enumerate(data):
+            vector = model.infer_vector(doc)
+            books[i]['vector'] = list(vector.astype(float))
+            bar()
+    save_json(books, './data/books/books.json')
+
+
+def sbert():
+    books = open_book_data('./data/books/books.json')
+    data = []
+    for book in books:
+        data.append(book['description']['value'])
+    model = SentenceTransformer("all-MiniLM-L6-v2")
+    embeddings = model.encode(data)
+    for i, book in enumerate(books):
+        books[i]['sbert'] = list(embeddings[i].astype(float))
+    save_json(books, './data/books/books.json')
+
+
+def one_hot(data: list, classes: int):
+    x = np.zeros((len(data), classes))
+    for i, word in enumerate(data):
+        x[i, word] = 1
+    return x
+
+
+def load_data(sbert=False):
+    books = open_book_data('./data/books/books.json')
+    x = []
+    y = []
+    count = defaultdict(int)
+    d_key = 'sbert' if sbert else 'vector'
+    for book in books:
+        if count[book['class']] > 2000:
+            continue
+        x.append(np.array(book[d_key]))
+        y.append(book['class'])
+        count[book['class']] += 1
+    print(count)
+    y = one_hot(y, len(classes))
+    x = np.array(x)
+    # shuffle
+    perm = np.random.permutation(len(x))
+    x = x[perm]
+    y = y[perm]
+    x_train = x[:-1000]
+    y_train = y[:-1000]
+    x_test = x[-1000:]
+    y_test = y[-1000:]
+    return x_train, y_train, x_test, y_test
+
+
+def books_model():
+    x_train, y_train, x_test, y_test = load_data(sbert=True)
+    # t_size = 16
+    # x_train = x_train.reshape(-1, 1, t_size, t_size)
+    # x_test = x_test.reshape(-1, 1, t_size, t_size)
+    opt = Optimizers.ADAM
+    vec_size = x_train.shape[1]
+    classes = y_train.shape[1]
+    opt = Optimizers.ADAM
+    layers: list[Layer] = [
+        Dense(vec_size, 1024, opt),
+        ActivationLayer(ReLU()),
+        Dense(1024, 128, opt),
+        ActivationLayer(ReLU()),
+        Dense(128, classes, opt),
+    ]
+    filters_1 = 6
+    filters_2 = 12
+    # l_2 = (t_size // 2) - 1
+    # l_3 = l_2 - 2
+    # layers = [
+    #     Convolution((t_size, t_size, 1), filters_1, (3, 3), opt),
+    #     ActivationLayer(ReLU()),
+    #     MaxPool(2, 2),
+    #     Convolution((l_2, l_2, filters_1), filters_2, (3, 3), opt),
+    #     ActivationLayer(ReLU()),
+    #     Reshape((l_3, l_3, filters_2)),
+    #     Dense(l_3 * l_3 * filters_2, 128, opt),
+    #     ActivationLayer(ReLU()),
+    #     Dense(128, classes, opt),
+    # ]
+    network = Network(layers, softmax=True, loss=cce,
+                      loss_prime=cce_softmax_prime, verbose=True)
+    val = (x_test, y_test)
+    print(x_train.shape)
+    print(y_train.shape)
+    network.train(x_train, y_train, epochs=100, validation=val, batch_size=32)
+    network.save('./models/books_3')
+    loss = network.average_loss()
+    acc = network.average_accuracy()
+    val_loss = network.validation_loss_history
+    val_acc = network.validation_accuracy_history
+    plot_net(loss, acc, val_loss, val_acc, 'books2')
+
+
 if __name__ == '__main__':
-    make_x_y()
-    check()
+    sbert()
