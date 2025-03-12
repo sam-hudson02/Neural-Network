@@ -19,7 +19,7 @@ class MaxPool(Layer):
         out = self.pool.detach().numpy().T
         return out
 
-    def back_prop(self, grad: np.ndarray, alpha: float) -> np.ndarray:
+    def back_prop(self, grad: np.ndarray) -> np.ndarray:
         if self.x is None:
             raise ValueError('self.x is None')
         if self.pool is None:

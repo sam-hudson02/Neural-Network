@@ -31,7 +31,7 @@ class Dense(Layer):
             self.b = self.b[:, 0].reshape(self.b.shape[0], 1)
             return np.dot(self.w, input) + self.b
 
-    def back_prop(self, grad: np.ndarray, alpha: float) -> np.ndarray:
+    def back_prop(self, grad: np.ndarray) -> np.ndarray:
         if self.input is None:
             raise ValueError('No input data')
 

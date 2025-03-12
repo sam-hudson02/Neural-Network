@@ -5,7 +5,6 @@ from typing import Tuple
 import os
 from PIL import Image
 import pickle
-import matplotlib.pyplot as plt
 
 
 def load_mnist_data() -> Tuple[np.ndarray, np.ndarray, np.ndarray,
@@ -16,30 +15,29 @@ def load_mnist_data() -> Tuple[np.ndarray, np.ndarray, np.ndarray,
     y: np.ndarray: The output data, where each column is a one-hot
                    encoded label.
     """
-    data = pd.read_csv('./data/mnist.csv')
-    data = np.array(data)
-    np.random.shuffle(data)
+    train_data = pd.read_csv('./data/mnist/mnist_train.csv')
+    train_data = np.array(train_data)
+    np.random.shuffle(train_data)
+    test_data = pd.read_csv('./data/mnist/mnist_test.csv')
+    test_data = np.array(test_data)
 
     # transpose the data
-    data = data.T
+    train_data = train_data.T
+    test_data = test_data.T
 
-    rows = data.shape[0]
+    rows = train_data.shape[0]
 
-    # take the first 1000 cols as the test data
-    data_test = data[:, 0:4000]
     # gets the first rows as the labels
-    Y_test = data_test[0]
+    Y_test = test_data[0]
     # gets the rest of the data as the input
-    X_test = data_test[1:rows]
+    X_test = test_data[1:rows]
     # normalize the data
     X_test = X_test / 255.
 
-    # take the rest of the cols as the training data
-    data_train = data[:, 4000:]
     # gets the first rows as the labels
-    Y_train = data_train[0]
+    Y_train = train_data[0]
     # gets the rest of the data as the input
-    X_train = data_train[1:rows]
+    X_train = train_data[1:rows]
     # normalize the data
     X_train = X_train / 255
 

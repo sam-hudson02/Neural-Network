@@ -48,7 +48,7 @@ class Convolution(Layer):
                                              mode='valid')
         return (out + self.biases).T
 
-    def back_prop(self, grad: np.ndarray, alpha: float) -> np.ndarray:
+    def back_prop(self, grad: np.ndarray) -> np.ndarray:
         if self.input is None:
             raise ValueError('self.input is None')
 

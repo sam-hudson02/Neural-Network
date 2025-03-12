@@ -9,7 +9,7 @@ class Layer:
     def prop(self, input: np.ndarray) -> np.ndarray:
         raise (ValueError('method prop not implemented'))
 
-    def back_prop(self, grad: np.ndarray, alpha: float) -> np.ndarray:
+    def back_prop(self, grad: np.ndarray) -> np.ndarray:
         raise (ValueError('method back_prop not implemented'))
 
     def save(self, path: str, i: int) -> dict:

@@ -1,21 +1,24 @@
 import json
 import nltk
 from collections import defaultdict
-from utils.activation import ReLU, Sigmoid, Tanh
-from layers.activation import Activation as ActivationLayer
-from layers.convolution import Convolution
-from layers.maxpool import MaxPool
-from layers.layer import Layer
-from layers.reshape import Reshape
-from plots.plot_net import plot_net
-from utils.optimizer import Optimizers
-from utils.utils import cce, cce_softmax_prime
-from layers.dense import Dense
-from models.nn import Network
+# from utils.activation import ReLU, Sigmoid, Tanh
+# from layers.activation import Activation as ActivationLayer
+# from layers.convolution import Convolution
+# from layers.conv1d import Conv1d
+# from layers.maxpool import MaxPool
+# from layers.layer import Layer
+# from layers.reshape import Reshape
+# from layers.flatten import Flatten
+# from plots.plot_net import plot_net
+# from utils.optimizer import Optimizers
+# from utils.utils import cce, cce_softmax_prime
+# from layers.dense import Dense
+# from models.nn import Network
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from sentence_transformers import SentenceTransformer
 from alive_progress import alive_bar
 import numpy as np
+import random
 nltk.download('punkt_tab')
 
 classes = [
@@ -43,12 +46,16 @@ def create_classes():
     str_desc = []
     for i, book in enumerate(book_json):
         subjects = book['subjects']
-        for subject in subjects:
-            for c in classes:
-                if c in subject:
-                    book['class'] = classes.index(c)
+        mulit_label = []
+        for c in classes:
+            if c in subjects:
+                book['class'] = classes.index(c)
+                mulit_label.append(1)
+            else:
+                mulit_label.append(0)
+        book['multi'] = mulit_label
         desc = book['description']
-        if type(desc) == str:
+        if type(desc) is str:
             str_desc.append(i)
             desc = {'type': '/type/text', 'value': desc}
         book['description'] = desc
@@ -247,7 +254,7 @@ def sbert():
     data = []
     for book in books:
         data.append(book['description']['value'])
-    model = SentenceTransformer("all-MiniLM-L6-v2")
+    model = SentenceTransformer("all-distilroberta-v1")
     embeddings = model.encode(data)
     for i, book in enumerate(books):
         books[i]['sbert'] = list(embeddings[i].astype(float))
@@ -261,17 +268,43 @@ def one_hot(data: list, classes: int):
     return x
 
 
-def load_data(sbert=False):
+def create_train_test(split: float = 0.8):
+    # open book data
+    books: list = open_book_data('./data/books/books.json')
+    count = defaultdict(int)
+    for book in books[:100]:
+        multi = book['multi']
+        for i, c in enumerate(multi):
+            print(multi)
+            if c == 1:
+                class_name = classes[i]
+                count[class_name] += 1
+    # randomize
+    random.shuffle(books)
+    # split
+    split = int(len(books) * split)
+    train = books[:split]
+    test = books[split:]
+    # save
+    save_json(count, './data/books/count.json')
+    save_json(train, './data/books/train.json')
+    save_json(test, './data/books/test.json')
+
+
+def load_data_old(sbert=False, normalize=False):
     books = open_book_data('./data/books/books.json')
     x = []
     y = []
+    y_multi = []
     count = defaultdict(int)
     d_key = 'sbert' if sbert else 'vector'
     for book in books:
-        if count[book['class']] > 2000:
-            continue
+        if normalize:
+            if count[book['class']] > 2000:
+                continue
         x.append(np.array(book[d_key]))
         y.append(book['class'])
+        y_multi.append(np.array(book['multi']))
         count[book['class']] += 1
     print(count)
     y = one_hot(y, len(classes))
@@ -280,50 +313,92 @@ def load_data(sbert=False):
     perm = np.random.permutation(len(x))
     x = x[perm]
     y = y[perm]
+    y_multi = np.array(y_multi)
+    y_multi = y_multi[perm]
     x_train = x[:-1000]
     y_train = y[:-1000]
+    y_multi_train = y_multi[:-1000]
     x_test = x[-1000:]
     y_test = y[-1000:]
-    return x_train, y_train, x_test, y_test
+    y_multi_test = y_multi[-1000:]
+
+    return x_train, y_train, y_multi_train, x_test, y_test, y_multi_test
+
+
+def load_data(sbert=False, normalize=False):
+    x_train, y_train, y_multi_train = process_file(
+        './data/books/train.json', normalize, sbert)
+    x_test, y_test, y_multi_test = process_file(
+        './data/books/test.json', normalize, sbert)
+
+    return x_train, y_train, y_multi_train, x_test, y_test, y_multi_test
+
+
+def process_file(path: str, normalize: bool = False, sbert: bool = False):
+    data = open_book_data(path)
+    x = []
+    y = []
+    y_multi = []
+    count = defaultdict(int)
+    d_key = 'sbert' if sbert else 'vector'
+    for book in data:
+        if normalize:
+            if count[book['class']] > 2000:
+                continue
+        x.append(np.array(book[d_key]))
+        y.append(book['class'])
+        y_multi.append(np.array(book['multi']))
+        for i, c in enumerate(book['multi']):
+            if c == 1:
+                count[i] += 1
+    print(count)
+    x = np.array(x)
+    y = np.array(y)
+    y_multi = np.array(y_multi)
+    return x, y, y_multi
 
 
 def books_model():
     x_train, y_train, x_test, y_test = load_data(sbert=True)
-    # t_size = 16
-    # x_train = x_train.reshape(-1, 1, t_size, t_size)
-    # x_test = x_test.reshape(-1, 1, t_size, t_size)
-    opt = Optimizers.ADAM
+    h = 32
+    w = 24
+    x_train = x_train.reshape(-1, 1, h, w)
+    x_test = x_test.reshape(-1, 1, h, w)
     vec_size = x_train.shape[1]
+    # x_train = x_train.reshape(-1, 1, vec_size)
+    # x_test = x_test.reshape(-1, 1, vec_size)
+    opt = Optimizers.ADAM
     classes = y_train.shape[1]
     opt = Optimizers.ADAM
     layers: list[Layer] = [
-        Dense(vec_size, 1024, opt),
-        ActivationLayer(ReLU()),
-        Dense(1024, 128, opt),
+        Dense(vec_size, 128, opt),
         ActivationLayer(ReLU()),
         Dense(128, classes, opt),
     ]
     filters_1 = 6
     filters_2 = 12
-    # l_2 = (t_size // 2) - 1
-    # l_3 = l_2 - 2
-    # layers = [
-    #     Convolution((t_size, t_size, 1), filters_1, (3, 3), opt),
-    #     ActivationLayer(ReLU()),
-    #     MaxPool(2, 2),
-    #     Convolution((l_2, l_2, filters_1), filters_2, (3, 3), opt),
-    #     ActivationLayer(ReLU()),
-    #     Reshape((l_3, l_3, filters_2)),
-    #     Dense(l_3 * l_3 * filters_2, 128, opt),
-    #     ActivationLayer(ReLU()),
-    #     Dense(128, classes, opt),
-    # ]
+    l_2_h = (h // 2) - 1
+    l_2_w = (w // 2) - 1
+    l_3_h = l_2_h - 2
+    l_3_w = l_2_w - 2
+    layers = [
+        Convolution((h, w, 1), filters_1, (3, 3), opt),
+        ActivationLayer(ReLU()),
+        MaxPool(2, 2),
+        Convolution((l_2_h, l_2_w, filters_1), filters_2, (3, 3), opt),
+        ActivationLayer(ReLU()),
+        Reshape((l_3_w, l_3_h, filters_2)),
+        Dense(l_3_h * l_3_w * filters_2, 128, opt),
+        ActivationLayer(ReLU()),
+        Dense(128, classes, opt),
+    ]
+
     network = Network(layers, softmax=True, loss=cce,
                       loss_prime=cce_softmax_prime, verbose=True)
     val = (x_test, y_test)
     print(x_train.shape)
     print(y_train.shape)
-    network.train(x_train, y_train, epochs=100, validation=val, batch_size=32)
+    network.train(x_train, y_train, epochs=100, validation=val, batch_size=128)
     network.save('./models/books_3')
     loss = network.average_loss()
     acc = network.average_accuracy()
@@ -333,4 +408,4 @@ def books_model():
 
 
 if __name__ == '__main__':
-    sbert()
+    create_train_test()

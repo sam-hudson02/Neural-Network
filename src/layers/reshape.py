@@ -13,7 +13,7 @@ class Reshape(Layer):
         images = input.shape[3]
         return np.reshape(input, (self.output_size, images))
 
-    def back_prop(self, grad: np.ndarray, alpha: float) -> np.ndarray:
+    def back_prop(self, grad: np.ndarray) -> np.ndarray:
         images = self.input.shape[3]
         return np.reshape(grad, (self.input_size[0], self.input_size[1],
                                  self.input_size[2], images))

@@ -11,7 +11,7 @@ class Activation(Layer):
         self.input = input
         return self.a_func.eval(input)
 
-    def back_prop(self, grad: np.ndarray, alpha: float) -> np.ndarray:
+    def back_prop(self, grad: np.ndarray) -> np.ndarray:
         return grad * self.a_func.derivative(self.input)
 
     def save(self, path: str, i: int) -> dict:
