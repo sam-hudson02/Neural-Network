@@ -6,3 +6,4 @@ __pycache__/
 **.log
 **.synctex.gz
 **.fdb_latexmk
+.obsidian/
