@@ -23,6 +23,7 @@ def plot_net(loss: list[float], acc: list[float], val_loss: list[float],
     if not os.path.exists('./plots'):
         os.makedirs('./plots')
     plt.savefig(f'./plots/{title}.png')
+    plt.close(fig)
 
 
 def plot_compare_loss(networks: list[Network],
@@ -37,7 +38,8 @@ def plot_compare_loss(networks: list[Network],
     plt.title(title)
     if not os.path.exists('./plots'):
         os.makedirs('./plots')
-    plt.savefig(f'./plots/{title}.png')
+    plt.savefig(f'./plots/{file}.png')
+    plt.close(fig)
 
 
 def plot_compare_acc(networks: list[Network],
@@ -53,6 +55,7 @@ def plot_compare_acc(networks: list[Network],
     if not os.path.exists('./plots'):
         os.makedirs('./plots')
     plt.savefig(f'./plots/{file}.png')
+    plt.close(fig)
 
 
 def plot_train_val_loss(network: Network,
@@ -68,6 +71,7 @@ def plot_train_val_loss(network: Network,
     if not os.path.exists('./plots'):
         os.makedirs('./plots')
     plt.savefig(f'./plots/{file}.png')
+    plt.close(fig)
 
 
 def plot_train_val_acc(network: Network,
@@ -83,6 +87,7 @@ def plot_train_val_acc(network: Network,
     if not os.path.exists('./plots'):
         os.makedirs('./plots')
     plt.savefig(f'./plots/{file}.png')
+    plt.close(fig)
 
 
 def plot_multi_accuracy(pred: np.ndarray, actual: np.ndarray,
@@ -99,3 +104,4 @@ def plot_multi_accuracy(pred: np.ndarray, actual: np.ndarray,
     if not os.path.exists('./plots'):
         os.makedirs('./plots')
     plt.savefig(f'./plots/{file}.png')
+    plt.close(fig)

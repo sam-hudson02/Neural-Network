@@ -1,48 +1,79 @@
 import pandas as pd
 import numpy as np
+from utils.dtype import DTYPE
 from utils.utils import one_hot
 from typing import Tuple
 import os
 from PIL import Image
 import pickle
 
+CIFAR_CLASSES = 10
 
-def load_mnist_data() -> Tuple[np.ndarray, np.ndarray, np.ndarray,
-                               np.ndarray]:
+
+def load_mnist_data(test_size: int = 6000,
+                    classes: int | None = None) -> Tuple[np.ndarray, np.ndarray,
+                                                         np.ndarray, np.ndarray]:
     """
-    Import the classify_data.csv file and return it as
+    Load MNIST as
     x: np.ndarray: The input data, where each column is a sample.
     y: np.ndarray: The output data, where each column is a one-hot
                    encoded label.
-    """
-    train_data = pd.read_csv('./data/mnist/mnist_train.csv')
-    train_data = np.array(train_data)
-    np.random.shuffle(train_data)
-    test_data = pd.read_csv('./data/mnist/mnist_test.csv')
-    test_data = np.array(test_data)
 
-    # transpose the data
+    Prefers the official pre-split download, looking for mnist_train.csv and
+    mnist_test.csv in data/ and then in data/mnist/. Falls back to the single
+    combined data/mnist.csv, holding out the last test_size rows.
+    :param test_size: int(optional): Rows held out when splitting the single
+                      combined csv. Ignored when the split files exist, which
+                      carry their own train/test division.
+    :param classes: int(optional): Size of the label space. Defaults to one
+                    more than the largest label across both splits, so that
+                    EMNIST's larger alphabet works without a code change. The
+                    train and test sets always share the same encoding width.
+    """
+    # the pre-split download, in either of the two places it tends to land
+    split_locations = (
+        ('./data/mnist_train.csv', './data/mnist_test.csv'),
+        ('./data/mnist/mnist_train.csv', './data/mnist/mnist_test.csv'),
+    )
+    combined = './data/mnist.csv'
+    split = next((pair for pair in split_locations
+                  if all(os.path.exists(f) for f in pair)), None)
+
+    if split is not None:
+        print(f'loading {split[0]} and {split[1]}')
+        train_data = np.array(pd.read_csv(split[0]))
+        test_data = np.array(pd.read_csv(split[1]))
+        np.random.shuffle(train_data)
+    elif os.path.exists(combined):
+        print(f'loading {combined}, holding out {test_size} rows for testing')
+        data = np.array(pd.read_csv(combined))
+        np.random.shuffle(data)
+        if not 0 < test_size < len(data):
+            raise ValueError(f'test_size must be in (0, {len(data)})')
+        train_data, test_data = data[:-test_size], data[-test_size:]
+    else:
+        wanted = ' or '.join(f'{a} and {b}' for a, b in split_locations)
+        raise FileNotFoundError(f'need either {wanted}, or {combined}')
+
+    # transpose so that each column is a sample
     train_data = train_data.T
     test_data = test_data.T
 
-    rows = train_data.shape[0]
+    # first row holds the labels, the rest are the pixels
+    Y_test = test_data[0].astype(int)
+    # divide in the working dtype: 255. is a Python float, so the
+    # plain division would hand back float64 pixels
+    X_test = test_data[1:].astype(DTYPE) / 255.
 
-    # gets the first rows as the labels
-    Y_test = test_data[0]
-    # gets the rest of the data as the input
-    X_test = test_data[1:rows]
-    # normalize the data
-    X_test = X_test / 255.
+    Y_train = train_data[0].astype(int)
+    X_train = train_data[1:].astype(DTYPE) / 255.
 
-    # gets the first rows as the labels
-    Y_train = train_data[0]
-    # gets the rest of the data as the input
-    X_train = train_data[1:rows]
-    # normalize the data
-    X_train = X_train / 255
+    # one label space for both splits, or the encodings would not line up
+    if classes is None:
+        classes = int(max(Y_train.max(), Y_test.max())) + 1
 
-    return np.asarray(X_test), one_hot(Y_test), \
-        np.asarray(X_train), one_hot(Y_train)
+    return np.asarray(X_test), one_hot(Y_test, classes), \
+        np.asarray(X_train), one_hot(Y_train, classes)
 
 
 def unpickle(file):
@@ -53,7 +84,8 @@ def unpickle(file):
 
 def load_cifar_data():
     """
-    Load the CIFAR-10 dataset.
+    Load the CIFAR-10 dataset as (x_test, y_test, x_train, y_train), with one
+    sample per column and one-hot labels.
     """
     folder = './data/cifar-10-batches-py/'
     data_train = []
@@ -61,17 +93,21 @@ def load_cifar_data():
     for i in range(1, 6):
         batch = unpickle(folder + f'data_batch_{i}')
         data_train.append(batch[b'data'])
-        labels_train.append(batch[b'labels'])
+        labels_train.append(np.asarray(batch[b'labels']))
     names = unpickle(folder + 'batches.meta')[b'label_names']
     print(names)
     test_batch = unpickle(folder + 'test_batch')
-    data_test = test_batch[b'data']
+    data_test = test_batch[b'data'].astype(DTYPE) / 255.
     labels_test = np.asarray(test_batch[b'labels'])
-    labels_train = np.array(labels_train)
-    data_train = np.asarray(data_train).T.reshape((3072, -1))
-    data_train = data_train / 255.
-    return data_test.T, one_hot(labels_test), \
-        data_train, one_hot(labels_train)
+
+    # stack batches along the sample axis so that row i of data_train still
+    # belongs to labels_train[i]; transposing the stacked (5, n, 3072) block
+    # instead would interleave the batches and break that pairing
+    data_train = np.concatenate(data_train, axis=0).astype(DTYPE) / 255.
+    labels_train = np.concatenate(labels_train, axis=0)
+
+    return data_test.T, one_hot(labels_test, CIFAR_CLASSES), \
+        data_train.T, one_hot(labels_train, CIFAR_CLASSES)
 
 
 def load_cifar_10_data(data_dir, negatives=False):
@@ -153,7 +189,7 @@ def prep_image(image: Image.Image, res: int) -> np.ndarray:
     image = image.convert('L')
     image_arr = np.array(image)
     image_arr = image_arr.flatten()
-    image_arr = image_arr / 255.
+    image_arr = image_arr.astype(DTYPE) / 255.
     return image_arr
 
 

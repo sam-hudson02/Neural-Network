@@ -44,8 +44,9 @@ def math_fc(epochs: int = 10):
 def math_conv(epochs: int = 10):
     x_test, y_test, x_train, y_train, meanings = load_math_data(
         'data/math')
-    x_train = x_train.reshape(x_train.shape[0], 1, 28, 28)
-    x_test = x_test.reshape(x_test.shape[0], 1, 28, 28)
+    # (samples, height, width, depth); Network.train moves samples to the back
+    x_train = x_train[..., None]
+    x_test = x_test[..., None]
     cats = len(meanings.keys())
 
     opt = Optimizers.ADAM

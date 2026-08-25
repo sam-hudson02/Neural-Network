@@ -1,25 +1,32 @@
 import json
 import nltk
 from collections import defaultdict
-# from utils.activation import ReLU, Sigmoid, Tanh
-# from layers.activation import Activation as ActivationLayer
-# from layers.convolution import Convolution
-# from layers.conv1d import Conv1d
-# from layers.maxpool import MaxPool
-# from layers.layer import Layer
-# from layers.reshape import Reshape
-# from layers.flatten import Flatten
-# from plots.plot_net import plot_net
-# from utils.optimizer import Optimizers
-# from utils.utils import cce, cce_softmax_prime
-# from layers.dense import Dense
-# from models.nn import Network
+from utils.activation import ReLU
+from layers.activation import Activation as ActivationLayer
+from layers.convolution import Convolution
+from layers.maxpool import MaxPool
+from layers.layer import Layer
+from layers.reshape import Reshape
+from plots.plot_net import plot_net
+from utils.optimizer import Optimizers
+from utils.utils import cce, cce_softmax_prime
+from layers.dense import Dense
+from models.nn import Network
+# layers.conv1d and layers.flatten do not exist in this repo, so the
+# Conv1d/Flatten variants of the models below are not available
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from sentence_transformers import SentenceTransformer
 from alive_progress import alive_bar
 import numpy as np
 import random
-nltk.download('punkt_tab')
+
+
+def _ensure_punkt():
+    """Fetch the tokenizer data on first use rather than at import time."""
+    try:
+        nltk.data.find('tokenizers/punkt_tab')
+    except LookupError:
+        nltk.download('punkt_tab')
 
 classes = [
     "History", "Fantasy", "Drama", "Mystery", "Science fiction", "Romance",
@@ -95,6 +102,7 @@ def tokenize():
     for book in book_json:
         idf_count = defaultdict(int)
         text = book['description']['value'].lower()
+        _ensure_punkt()
         sentences = nltk.sent_tokenize(text)
         toks = []
         for sent in sentences:

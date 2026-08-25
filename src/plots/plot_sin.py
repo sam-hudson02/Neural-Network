@@ -1,19 +1,12 @@
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
-from utils.alpha import exp_alpha, step_alpha
-from utils.data import load_cifar_10_data, load_sin, load_mnist_data, load_cifar_data
-from utils.math_data import load_math_data, load_math_meta
+from utils.data import load_sin
 import numpy as np
-from utils.utils import Activation, mse, mse_prime, one_hot
-from models.classify import Classifier
+from utils.utils import mse, mse_prime
 from layers.dense import Dense
 from layers.activation import Activation as ActivationLayer
-from layers.convolution import Convolution
-from layers.reshape import Reshape
 from models.nn import Network
-from utils.activation import ReLU, Sigmoid, Tanh
-import matplotlib
-from utils.reddit_scrape import load_reddit_data
+from utils.activation import ReLU
 
 
 def sin_gif(epoch: int = 500):
@@ -28,17 +21,8 @@ def sin_gif(epoch: int = 500):
         Dense(128, 1),
     ]
 
-    def alpha(i):
-        if i < 100:
-            return 0.00005
-        else:
-            return 0.00002
-
     network = Network(layers, softmax=False, loss=mse,
                       loss_prime=mse_prime, verbose=True)
-
-    #loss_history = network.train(x, y, epoch, alpha=alpha,
-                                 #batch_size=200)
     
 
     # predictions = network.prop(x.T)
@@ -56,16 +40,15 @@ def sin_gif(epoch: int = 500):
     preds = []
     loss = []
     
-    for i in range(epoch+1):
-        if i % 100 == 0:
-            loss_history = network.train(x, y, i, alpha=alpha,
-                                 batch_size=200)
-            predictions = network.prop(x.T)
-            loss.append(plt.plot(np.log(loss_history), color='r'))
-            preds.append(predictions.T)
-            
-            #plt.plot(x, y)
-            #plt.plot(x, predictions.T)
+    # each frame trains a further step epochs on the same network, so frame k
+    # shows the fit after k * step epochs
+    step = 100
+    for i in range(0, epoch + 1, step):
+        if i:
+            network.train(x, y, epochs=step, batch_size=200)
+            loss.append(plt.plot(np.log(network.average_loss()), color='r'))
+        predictions = network.prop(x.T)
+        preds.append(predictions.T)
 
     frames = len(preds)
  
@@ -82,15 +65,13 @@ def sin_gif(epoch: int = 500):
     
     
     #plt.plot(x, y, color='b')
-    anim = animation.FuncAnimation(fig, func=animate, interval=500, frames=range(0, frames))
+    self_ref_anim = animation.FuncAnimation(fig, func=animate, interval=500, frames=range(0, frames))
     #ani = animation.ArtistAnimation(fig, preds, interval=500,
     #                              repeat_delay=1000)
     
     plt.show()
-    
+    return self_ref_anim
 
-
-    
     # plt.gca()
     # ani_2 = animation.ArtistAnimation(fig, loss, interval=500, repeat_delay=1000)
     # plt.show()

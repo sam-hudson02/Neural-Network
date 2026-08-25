@@ -16,10 +16,17 @@ class Optimizer:
                                                               np.ndarray]:
         raise NotImplementedError('update method not implemented')
 
+    def set_learning_rate(self, alpha: float) -> None:
+        """Retune the step size mid-run, for a learning rate schedule."""
+        raise NotImplementedError('set_learning_rate not implemented')
+
 
 class GradientDescent(Optimizer):
     def __init__(self, learning_rate: float):
         self.alpha = learning_rate
+
+    def set_learning_rate(self, alpha: float) -> None:
+        self.alpha = alpha
 
     def update(self, dw: np.ndarray, db: np.ndarray) -> Tuple[np.ndarray,
                                                               np.ndarray]:
@@ -39,6 +46,12 @@ class Adam(Optimizer):
         self.beta2 = beta2
         self.epsilon = epsilon
         self.t = t
+
+    def set_learning_rate(self, alpha: float) -> None:
+        # only eta changes: the moment estimates are what Adam has learned
+        # about each parameter's gradient, and resetting them alongside the
+        # rate would throw that away at every step of the schedule
+        self.eta = alpha
 
     def update(self, dw: np.ndarray, db: np.ndarray) -> Tuple[np.ndarray,
                                                               np.ndarray]:

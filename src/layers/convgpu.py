@@ -21,24 +21,30 @@ class ConvGPU(Layer):
         self.conv: torch.Tensor | None = None
         self.optimizer = optim.Adam([self.weights, self.bias])
 
+    # same (height, width, depth, batch) exchange layout as Convolution
+    _TO_INNER = (3, 2, 0, 1)
+    _TO_OUTER = (2, 3, 1, 0)
+
     def prop(self, input: np.ndarray) -> np.ndarray:
-        self.input = input.T.astype(np.float32)
+        self.input = np.ascontiguousarray(
+            input.transpose(self._TO_INNER)).astype(np.float32)
         self.x = torch.tensor(self.input, requires_grad=True)
         self.conv = F.conv2d(self.x, self.weights, self.bias, self.stride)
-        out = self.conv.detach().numpy().T
-        return out
+        out = self.conv.detach().numpy()
+        return out.transpose(self._TO_OUTER)
 
-    def back_prop(self, grad: np.ndarray, alpha: float) -> np.ndarray:
+    def back_prop(self, grad: np.ndarray) -> np.ndarray:
         if self.x is None:
             raise ValueError('self.x is None')
         if self.conv is None:
             raise ValueError('self.conv is None')
         self.optimizer.zero_grad()
 
-        self.conv.backward(torch.tensor(grad.T, dtype=torch.float32))
+        inner = np.ascontiguousarray(grad.transpose(self._TO_INNER))
+        self.conv.backward(torch.tensor(inner, dtype=torch.float32))
         if self.x.grad is None:
             raise ValueError('self.x.grad is None')
 
         self.optimizer.step()
-        out = self.x.grad.detach().numpy().T
-        return out
+        out = self.x.grad.detach().numpy()
+        return out.transpose(self._TO_OUTER)

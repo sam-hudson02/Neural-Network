@@ -1,6 +1,6 @@
 from layers.layer import Layer
-from numpy.random import rand
 import numpy as np
+from utils.dtype import DTYPE, as_dtype
 from utils.optimizer import Optimizer, Optimizers, Adam, GradientDescent
 
 
@@ -9,13 +9,19 @@ class Dense(Layer):
                  optimizer: Optimizers = Optimizers.ADAM, alpha: float = 0.01):
         self.input_size = input_size
         self.output_size = output_size
-        weights = rand(output_size, input_size) - 0.5
-        self.w = np.asarray(weights)
-        self.b = np.asarray(rand(output_size, 1)) - 0.5
+        # He initialisation: variance 2 / fan_in keeps activations from
+        # growing or vanishing as they pass through a stack of ReLU layers.
+        # A flat rand() - 0.5 has variance ~0.083 whatever the fan-in, which
+        # is far too wide for a 784-input layer and too narrow for a small one
+        self.w = as_dtype(np.random.normal(0.0, np.sqrt(2.0 / input_size),
+                                           (output_size, input_size)))
+        # biases start at zero; random ones only add noise the network has to
+        # learn its way out of
+        self.b = np.zeros((output_size, 1), dtype=DTYPE)
         self.input: np.ndarray | None = None
         opt = None
         if optimizer == Optimizers.ADAM:
-            opt = Adam()
+            opt = Adam(alpha)
         elif optimizer == Optimizers.GRAD:
             opt = GradientDescent(alpha)
         if opt is None:
@@ -23,13 +29,8 @@ class Dense(Layer):
         self.optimizer: Optimizer = opt
 
     def prop(self, input: np.ndarray) -> np.ndarray:
-        self.input = input
-        try:
-            val = np.dot(self.w, input) + self.b
-            return val
-        except ValueError:
-            self.b = self.b[:, 0].reshape(self.b.shape[0], 1)
-            return np.dot(self.w, input) + self.b
+        self.input = as_dtype(input)
+        return np.dot(self.w, self.input) + self.b
 
     def back_prop(self, grad: np.ndarray) -> np.ndarray:
         if self.input is None:
@@ -39,12 +40,14 @@ class Dense(Layer):
         db = grad.sum(axis=1) / grad.shape[1]
         db = db.reshape(db.shape[0], 1)
 
-        u_dw, u_db = self.optimizer.update(dw, db)
+        # the gradient w.r.t. the input must use the weights this forward
+        # pass actually used, so take it before applying the update
+        dx = np.dot(self.w.T, grad)
 
+        u_dw, u_db = self.optimizer.update(dw, db)
         self.w = np.subtract(self.w, u_dw)
         self.b = np.subtract(self.b, u_db)
 
-        dx = np.dot(self.w.T, grad)
         return dx
 
     def save(self, path: str, i: int) -> dict:
@@ -60,6 +63,6 @@ class Dense(Layer):
 
     def open(self, path: str, info: dict) -> None:
         w_file = info['w']
-        self.w = np.load(f'{path}/{w_file}')
+        self.w = as_dtype(np.load(f'{path}/{w_file}'))
         b_file = info['b']
-        self.b = np.load(f'{path}/{b_file}')
+        self.b = as_dtype(np.load(f'{path}/{b_file}'))

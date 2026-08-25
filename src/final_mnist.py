@@ -61,8 +61,10 @@ def mnist_basic(epochs: int = 20):
 
 def mnist_conv(epochs: int = 20):
     x_test, y_test, x_train, y_train = load_mnist_data()
-    x_train = x_train.T.reshape(x_train.shape[1], 1, 28, 28)
-    x_test = x_test.T.reshape(x_test.shape[1], 1, 28, 28)
+    # Network.train takes samples first and moves that axis to the back, so
+    # hand it (samples, height, width, depth) volumes
+    x_train = x_train.T.reshape(-1, 28, 28, 1)
+    x_test = x_test.T.reshape(-1, 28, 28, 1)
     y_test = y_test.T
     y_train = y_train.T
     filters_1 = 6
@@ -89,7 +91,7 @@ def mnist_conv(epochs: int = 20):
     if check_model_exists('models/mnist_conv'):
         network.open('models/mnist_conv')
     else:
-        network.train(x_train, y_train.T, epochs=epochs,
+        network.train(x_train, y_train, epochs=epochs,
                       batch_size=32, validation=val)
         network.save('models/mnist_conv')
     return network

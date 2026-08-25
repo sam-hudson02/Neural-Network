@@ -1,0 +1,35 @@
+[project]
+name = "phys379"
+version = "0.1.0"
+description = "From-scratch neural networks for the PHYS379 machine learning project"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "alive-progress>=3.3.0",
+    "matplotlib>=3.11.1",
+    "numpy>=2.5.2",
+    "pandas>=3.0.5",
+    "pillow>=12.3.0",
+    "torch>=2.13.0",
+]
+
+[project.optional-dependencies]
+scrape = [
+    "beautifulsoup4>=4.15.0",
+    "requests>=2.34.2",
+]
+nlp = [
+    "gensim>=4.4.0",
+    "nltk>=3.10.3",
+    "sentence-transformers>=6.0.0",
+]
+
+# torch is only used for max pooling and the GPU convolution layer, so take
+# the cpu wheels rather than pulling in the whole CUDA stack
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }

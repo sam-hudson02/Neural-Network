@@ -1,18 +1,15 @@
 import os
 from layers.layer import Layer
 from layers.dense import Dense
-from layers.dropout import Dropout
 from layers.activation import Activation as ActivationLayer
 from layers.convolution import Convolution
 from layers.reshape import Reshape
 from layers.maxpool import MaxPool
 from plots.plot_net import plot_compare_acc, plot_compare_loss, plot_multi_accuracy, plot_train_val_acc, plot_train_val_loss
-from utils.math_data import load_math_data
-from utils.utils import bce, bce_prime, cce, cce_softmax_prime
+from utils.utils import bce, bce_prime
 from models.nn import Network
 from utils.activation import ReLU, Sigmoid
 from utils.optimizer import Optimizers
-import os
 from utils.bow import load_data
 import numpy as np
 
