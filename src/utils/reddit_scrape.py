@@ -2,6 +2,11 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import time
+from string import punctuation
+import re
+from collections import defaultdict
+import numpy as np
+import pandas as pd
 
 
 def get_reddit():
@@ -95,24 +100,47 @@ def get_post(href: str) -> str | None:
 
 def create_vocab():
     data = open_data()
-    vocab = {}
+    vocab = defaultdict(int)
+
+    # if word is in 96% of posts, remove it
+    cutoff_upper = len(data) * 0.99
+
+    # if word is in 4% of posts, remove it
+    cutoff_lower = len(data) * 0.005
+
     for key in data:
         post = data[key]
         p = post['p']
-        remove = ['\n', '\t', '\r', '!', '?', '.', ',', ':',
-                  ';', '(', ')', '[', ']', '{', '}', '"', "'"]
-        for r in remove:
-            p = p.replace(r, '')
+        for punct in punctuation:
+            if punct in p:
+                vocab[punct] += 1
+
+        # remove punc
+        pattern = f"[{re.escape(punctuation)}]"
+        p = re.sub(pattern, '', p)
+        p = p.lower()
+        p = p.replace('"', ' ')
+        p = p.replace('\n', ' ')
+        p = p.replace('.', ' ')
         words = p.split(' ')
+
+        seen = set()
         for word in words:
-            if word in vocab:
-                vocab[word] += 1
-            else:
-                vocab[word] = 1
-    vocab = list(vocab.keys())
-    print(len(vocab))
-    with open('vocab.json', 'w') as f:
-        json.dump(vocab, f, indent=2)
+            if word in seen:
+                continue
+            vocab[word] += 1
+            seen.add(word)
+
+    sorted_vocab = sorted(vocab.items(), key=lambda x: x[1], reverse=True)
+    for word, count in sorted_vocab:
+        if count > cutoff_upper:
+            del vocab[word]
+        if count < cutoff_lower:
+            del vocab[word]
+
+    print(len(vocab.keys()))
+    with open('./data/reddit/vocab.json', 'w') as f:
+        json.dump(list(vocab.keys()), f, indent=2)
 
 
 def back_off(url: str, headers: dict) -> requests.Response | None:
@@ -162,4 +190,68 @@ def count():
     print(f'Not Asshole: {not_asshole}')
 
 
-get_p()
+def open_vocab():
+    with open('./data/reddit/vocab.json', 'r') as f:
+        vocab = json.load(f)
+    return vocab
+
+
+def load_reddit_data():
+    from utils.utils import one_hot
+    data = open_data()
+    vocab = open_vocab()
+    x_list = []
+    y_list = []
+    for post in data.values():
+        x = np.zeros(len(vocab))
+        p = post['p']
+        p = p.lower()
+        p = p.replace('"', ' ')
+        p = p.replace('\n', ' ')
+        p = p.replace('.', ' ')
+        words = p.split(' ')
+        for word in words:
+            if word in vocab:
+                x[vocab.index(word)] += 1
+        x_list.append(x)
+        y_list.append(post['is_asshole'])
+
+    # remove 400 non-asshole posts
+    new_x = []
+    new_y = []
+
+    print(len(x_list))
+    removed = 0
+    i = 0
+    while i < len(x_list):
+        y = y_list[i]
+        if y == 0 and removed < 400:
+            removed += 1
+        else:
+            new_x.append(x_list[i])
+            new_y.append(y_list[i])
+        i += 1
+    print(len(new_x))
+
+    # create containing x column and y column
+    df = pd.DataFrame({'x': new_x, 'y': new_y})
+
+    # shuffle
+    df = df.sample(frac=1)
+
+    x = np.array(df['x'].to_list())
+    y = np.array(df['y'].to_list())
+
+    print(x.shape)
+    y = one_hot(y).T
+    print(x.shape)
+    print(y.shape)
+    print(x[0])
+    print(y[0])
+
+    x_train = x[:-200]
+    y_train = y[:-200]
+    x_test = x[-200:]
+    y_test = y[-200:]
+
+    return x_test, y_test, x_train, y_train

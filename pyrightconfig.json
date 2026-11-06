@@ -1,0 +1,22 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.12",
+  "extraPaths": [
+    "src"
+  ],
+  "include": [
+    "src",
+    "main.py"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    ".venv",
+    "data",
+    "models",
+    "plots",
+    "report"
+  ],
+  "typeCheckingMode": "basic",
+  "reportPrivateImportUsage": "none"
+}

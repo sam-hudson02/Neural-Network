@@ -1,7 +1,14 @@
 venv/
+.venv/
 __pycache__/
 **.fls
 **.aux
 **.log
 **.synctex.gz
 **.fdb_latexmk
+.obsidian/
+
+# large data artifacts (exceed GitHub's 100MB file limit)
+data/mnist_train.csv
+data/mnist_test.csv
+data/math_cache.npz

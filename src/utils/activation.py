@@ -47,14 +47,17 @@ class Tanh(ActivationFunction):
 
 
 class Softmax(ActivationFunction):
+    def __init__(self):
+        self.name = 'softmax'
+
     def eval(self, val: np.ndarray) -> np.ndarray:
-        exps = np.exp(val)
-        softmax = exps / np.sum(exps, axis=0)
-        if np.isnan(softmax).any():
-            raise ValueError('Softmax returned nan values')
-        return softmax
+        exps = np.exp(val - np.max(val, axis=0, keepdims=True))
+        return exps / np.sum(exps, axis=0, keepdims=True)
 
     def derivative(self, val: np.ndarray) -> np.ndarray:
-        n = val.shape[0]
-        matrix = np.subtract(np.eye(n), val.T)
-        return np.dot(matrix, val)
+        # softmax couples every output to every input, so it has no
+        # elementwise derivative for Activation to multiply through
+        raise NotImplementedError(
+            'softmax has no elementwise derivative; use '
+            'layers.activation.Softmax, or Network(softmax=True) with '
+            'cce_softmax_prime')
