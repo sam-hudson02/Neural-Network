@@ -1,5 +1,5 @@
 from matplotlib import pyplot as plt
-from models.nn import Network
+from scratchgrad.network import Network
 import os
 import numpy as np
 

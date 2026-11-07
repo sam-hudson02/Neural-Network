@@ -17,7 +17,7 @@ class Layer:
     def back_prop(self, grad: np.ndarray) -> np.ndarray:
         raise (ValueError('method back_prop not implemented'))
 
-    def save(self, path: str, i: int) -> dict:
+    def save(self, path: str, i: int) -> dict | None:
         pass
 
     def open(self, path: str, info: dict) -> None:

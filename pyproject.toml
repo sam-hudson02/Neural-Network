@@ -1,7 +1,7 @@
 [project]
-name = "phys379"
+name = "scratchgrad"
 version = "0.1.0"
-description = "From-scratch neural networks for the PHYS379 machine learning project"
+description = "Neural networks written from scratch on top of numpy"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -12,6 +12,10 @@ dependencies = [
     "pillow>=12.3.0",
     "torch>=2.13.0",
 ]
+
+[build-system]
+requires = ["uv_build>=0.13.4,<0.14.0"]
+build-backend = "uv_build"
 
 [project.optional-dependencies]
 scrape = [

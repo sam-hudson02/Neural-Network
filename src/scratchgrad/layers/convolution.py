@@ -1,9 +1,9 @@
-from layers.layer import Layer
+from scratchgrad.layers.layer import Layer
 from typing import Tuple
 from numpy.lib.stride_tricks import sliding_window_view
 import numpy as np
-from utils.dtype import DTYPE, as_dtype
-from utils.optimizer import Optimizer, Optimizers, Adam, GradientDescent
+from scratchgrad._dtype import DTYPE, as_dtype
+from scratchgrad.optimizers import Optimizer, Optimizers, Adam, GradientDescent
 
 
 class Convolution(Layer):

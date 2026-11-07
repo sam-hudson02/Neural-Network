@@ -2,20 +2,12 @@
   "venvPath": ".",
   "venv": ".venv",
   "pythonVersion": "3.12",
-  "extraPaths": [
-    "src"
-  ],
   "include": [
-    "src",
-    "main.py"
+    "src"
   ],
   "exclude": [
     "**/__pycache__",
-    ".venv",
-    "data",
-    "models",
-    "plots",
-    "report"
+    ".venv"
   ],
   "typeCheckingMode": "basic",
   "reportPrivateImportUsage": "none"

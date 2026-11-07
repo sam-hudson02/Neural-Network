@@ -5,16 +5,16 @@ Kept in one place because train_mnist_conv.py and train_math_conv.py want the
 same architecture with different widths, and a copy in each is a copy to keep
 in step every time the stack changes.
 """
-from layers.activation import Activation as ActivationLayer
-from layers.batchnorm import BatchNorm
-from layers.convolution import Convolution
-from layers.dense import Dense
-from layers.dropout import Dropout
-from layers.layer import Layer
-from layers.maxpool import MaxPool
-from layers.reshape import Reshape
-from utils.activation import ReLU
-from utils.optimizer import Optimizers
+from scratchgrad.layers.activation import Activation as ActivationLayer
+from scratchgrad.layers.batchnorm import BatchNorm
+from scratchgrad.layers.convolution import Convolution
+from scratchgrad.layers.dense import Dense
+from scratchgrad.layers.dropout import Dropout
+from scratchgrad.layers.layer import Layer
+from scratchgrad.layers.maxpool import MaxPool
+from scratchgrad.layers.reshape import Reshape
+from scratchgrad.activations import ReLU
+from scratchgrad.optimizers import Optimizers
 
 
 def build_cnn(classes: int, alpha: float, filters: tuple[int, int] = (6, 12),
