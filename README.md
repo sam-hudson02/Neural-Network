@@ -24,17 +24,11 @@ pooling and the optional `ConvGPU` layer.
 
 ## status
 
-This is a work in progress. The code still lives as top-level modules under
-`src/` (`layers`, `models`, `utils`, `plots`) rather than as an importable
-package, so for now `src` has to be on the path:
-
-```
-PYTHONPATH=src uv run python your_script.py
-```
-
-The package name in `pyproject.toml` is still `phys379`, and the `scrape` and
-`nlp` optional dependency groups belong to experiments that are no longer
-here.
+This is a work in progress. The code is an installable package,
+`scratchgrad`, under `src/scratchgrad/`; `uv sync` installs it into the
+project environment, so `uv run python your_script.py` can import it from
+anywhere. The `scrape` and `nlp` optional dependency groups belong to
+experiments that are no longer here.
 
 ## setup
 
@@ -71,12 +65,13 @@ labels go in samples-first, `(samples, features)` or
 
 ```python
 import numpy as np
-from layers.activation import Activation
-from layers.dense import Dense
-from models.nn import Network
-from utils.activation import ReLU
-from utils.optimizer import Optimizers
-from utils.utils import cce, cce_softmax_prime, one_hot
+from scratchgrad.activations import ReLU
+from scratchgrad.data import one_hot
+from scratchgrad.layers.activation import Activation
+from scratchgrad.layers.dense import Dense
+from scratchgrad.losses import cce, cce_softmax_prime
+from scratchgrad.network import Network
+from scratchgrad.optimizers import Optimizers
 
 x = np.random.rand(1000, 4)
 y = one_hot((x.sum(axis=1) > 2).astype(int), 2).T  # one_hot is classes-first
@@ -103,11 +98,11 @@ sample axis to the end first: `net.prop(Network.batch_last(x))`, which returns
 
 ### convolutional networks
 
-`models/cnn.py` has `build_cnn`, which builds three 3x3 convolutions with a
+`scratchgrad.cnn` has `build_cnn`, which builds three 3x3 convolutions with a
 max pool after the first two and a fully connected head:
 
 ```python
-from models.cnn import build_cnn
+from scratchgrad.cnn import build_cnn
 
 layers = build_cnn(classes=10, alpha=1e-3, padding='same', batch_norm=True,
                    dropout=0.3)
@@ -121,11 +116,11 @@ layers = build_cnn(classes=10, alpha=1e-3, padding='same', batch_norm=True,
 
 ### learning rate schedules
 
-`utils/schedule.py` gives the rate for each epoch. Apply it between epochs
+`scratchgrad.schedules` gives the rate for each epoch. Apply it between epochs
 with `Network.set_learning_rate`:
 
 ```python
-from utils.schedule import learning_rate
+from scratchgrad.schedules import learning_rate
 
 for epoch in range(epochs):
     net.set_learning_rate(learning_rate(1e-3, epoch, epochs, 'cosine'))
