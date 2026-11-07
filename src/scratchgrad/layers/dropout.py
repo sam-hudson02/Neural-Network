@@ -1,6 +1,6 @@
-from layers.layer import Layer
+from scratchgrad.layers.layer import Layer
 import numpy as np
-from utils.dtype import DTYPE
+from scratchgrad._dtype import DTYPE
 
 
 class Dropout(Layer):

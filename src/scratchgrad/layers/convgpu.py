@@ -1,4 +1,4 @@
-from layers.layer import Layer
+from scratchgrad.layers.layer import Layer
 import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np

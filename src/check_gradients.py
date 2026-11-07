@@ -21,13 +21,13 @@ import sys
 
 import numpy as np
 
-from layers.activation import Activation as ActivationLayer
-from layers.batchnorm import BatchNorm
-from layers.convolution import Convolution
-from layers.dense import Dense
-from utils.activation import ReLU, Sigmoid, Tanh
-from utils.dtype import NAME
-from utils.optimizer import Optimizer, Optimizers
+from scratchgrad.layers.activation import Activation as ActivationLayer
+from scratchgrad.layers.batchnorm import BatchNorm
+from scratchgrad.layers.convolution import Convolution
+from scratchgrad.layers.dense import Dense
+from scratchgrad.activations import ReLU, Sigmoid, Tanh
+from scratchgrad._dtype import NAME
+from scratchgrad.optimizers import Optimizer, Optimizers
 
 
 class Capture(Optimizer):

@@ -1,4 +1,4 @@
-from layers.layer import Layer
+from scratchgrad.layers.layer import Layer
 import numpy as np
 from typing import Tuple
 

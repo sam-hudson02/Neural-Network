@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -912,47 +912,6 @@ wheels = [
 ]
 
 [[package]]
-name = "phys379"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "alive-progress" },
-    { name = "matplotlib" },
-    { name = "numpy" },
-    { name = "pandas" },
-    { name = "pillow" },
-    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
-    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
-]
-
-[package.optional-dependencies]
-nlp = [
-    { name = "gensim" },
-    { name = "nltk" },
-    { name = "sentence-transformers" },
-]
-scrape = [
-    { name = "beautifulsoup4" },
-    { name = "requests" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "alive-progress", specifier = ">=3.3.0" },
-    { name = "beautifulsoup4", marker = "extra == 'scrape'", specifier = ">=4.15.0" },
-    { name = "gensim", marker = "extra == 'nlp'", specifier = ">=4.4.0" },
-    { name = "matplotlib", specifier = ">=3.11.1" },
-    { name = "nltk", marker = "extra == 'nlp'", specifier = ">=3.10.3" },
-    { name = "numpy", specifier = ">=2.5.2" },
-    { name = "pandas", specifier = ">=3.0.5" },
-    { name = "pillow", specifier = ">=12.3.0" },
-    { name = "requests", marker = "extra == 'scrape'", specifier = ">=2.34.2" },
-    { name = "sentence-transformers", marker = "extra == 'nlp'", specifier = ">=6.0.0" },
-    { name = "torch", specifier = ">=2.13.0", index = "https://download.pytorch.org/whl/cpu" },
-]
-provides-extras = ["scrape", "nlp"]
-
-[[package]]
 name = "pillow"
 version = "12.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1350,6 +1309,47 @@ wheels = [
 ]
 
 [[package]]
+name = "scratchgrad"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "alive-progress" },
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "pillow" },
+    { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
+    { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
+]
+
+[package.optional-dependencies]
+nlp = [
+    { name = "gensim" },
+    { name = "nltk" },
+    { name = "sentence-transformers" },
+]
+scrape = [
+    { name = "beautifulsoup4" },
+    { name = "requests" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "alive-progress", specifier = ">=3.3.0" },
+    { name = "beautifulsoup4", marker = "extra == 'scrape'", specifier = ">=4.15.0" },
+    { name = "gensim", marker = "extra == 'nlp'", specifier = ">=4.4.0" },
+    { name = "matplotlib", specifier = ">=3.11.1" },
+    { name = "nltk", marker = "extra == 'nlp'", specifier = ">=3.10.3" },
+    { name = "numpy", specifier = ">=2.5.2" },
+    { name = "pandas", specifier = ">=3.0.5" },
+    { name = "pillow", specifier = ">=12.3.0" },
+    { name = "requests", marker = "extra == 'scrape'", specifier = ">=2.34.2" },
+    { name = "sentence-transformers", marker = "extra == 'nlp'", specifier = ">=6.0.0" },
+    { name = "torch", specifier = ">=2.13.0", index = "https://download.pytorch.org/whl/cpu" },
+]
+provides-extras = ["scrape", "nlp"]
+
+[[package]]
 name = "sentence-transformers"
 version = "6.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1474,13 +1474,13 @@ resolution-markers = [
     "python_full_version < '3.14' and sys_platform == 'darwin'",
 ]
 dependencies = [
-    { name = "filelock", marker = "sys_platform == 'darwin'" },
-    { name = "fsspec", marker = "sys_platform == 'darwin'" },
-    { name = "jinja2", marker = "sys_platform == 'darwin'" },
-    { name = "networkx", marker = "sys_platform == 'darwin'" },
-    { name = "setuptools", marker = "sys_platform == 'darwin'" },
-    { name = "sympy", marker = "sys_platform == 'darwin'" },
-    { name = "typing-extensions", marker = "sys_platform == 'darwin'" },
+    { name = "filelock" },
+    { name = "fsspec" },
+    { name = "jinja2" },
+    { name = "networkx" },
+    { name = "setuptools" },
+    { name = "sympy" },
+    { name = "typing-extensions" },
 ]
 wheels = [
     { url = "https://download-r2.pytorch.org/whl/cpu/torch-2.13.0-cp312-cp312-macosx_14_0_arm64.whl", hash = "sha256:2fe228aba290d14b9f31b049be550dbd469c3fd3013d7a19705b30454da97027", upload-time = "2026-07-08T12:26:18Z" },
@@ -1502,13 +1502,13 @@ resolution-markers = [
     "python_full_version < '3.14' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "filelock", marker = "sys_platform != 'darwin'" },
-    { name = "fsspec", marker = "sys_platform != 'darwin'" },
-    { name = "jinja2", marker = "sys_platform != 'darwin'" },
-    { name = "networkx", marker = "sys_platform != 'darwin'" },
-    { name = "setuptools", marker = "sys_platform != 'darwin'" },
-    { name = "sympy", marker = "sys_platform != 'darwin'" },
-    { name = "typing-extensions", marker = "sys_platform != 'darwin'" },
+    { name = "filelock" },
+    { name = "fsspec" },
+    { name = "jinja2" },
+    { name = "networkx" },
+    { name = "setuptools" },
+    { name = "sympy" },
+    { name = "typing-extensions" },
 ]
 wheels = [
     { url = "https://download-r2.pytorch.org/whl/cpu/torch-2.13.0%2Bcpu-cp312-cp312-linux_s390x.whl", hash = "sha256:ffadde149901c8afa138daa38d898264003cfcf1a3336ca5cd964b5af227d867", upload-time = "2026-07-08T19:28:41Z" },

@@ -1,8 +1,8 @@
-from layers.layer import Layer
+from scratchgrad.layers.layer import Layer
 import torch.nn.functional as F
 import torch
 import numpy as np
-from utils.dtype import as_dtype, torch_dtype
+from scratchgrad._dtype import as_dtype, torch_dtype
 
 
 class MaxPool(Layer):

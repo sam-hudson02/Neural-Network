@@ -1,8 +1,8 @@
 import math
 import numpy as np
-from layers.layer import Layer
-from utils.dtype import as_dtype
-from utils.utils import stable_softmax, pad
+from scratchgrad.layers.layer import Layer
+from scratchgrad._dtype import as_dtype
+from scratchgrad._utils import stable_softmax, pad
 from typing import Callable
 import os
 import json

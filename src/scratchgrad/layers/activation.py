@@ -1,5 +1,5 @@
-from layers.layer import Layer
-from utils.activation import ActivationFunction
+from scratchgrad.layers.layer import Layer
+from scratchgrad.activations import ActivationFunction
 import numpy as np
 
 
